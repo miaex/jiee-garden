@@ -1,9 +1,11 @@
 import { level01 } from './level01.js';
+import { level02 } from './level02.js';
 
 // New levels are registered here by id. The engine/game code never needs
 // to change when a level is added — only this table grows.
 const LEVELS = {
-  1: level01
+  1: level01,
+  2: level02
 };
 
 export const LevelLoader = {

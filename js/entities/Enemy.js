@@ -4,8 +4,8 @@ import { PatrolAI, GuardState } from '../ai/PatrolAI.js';
 const RADIUS = 0.3;
 
 export class Enemy {
-  constructor(scene, config) {
-    this.config = { radius: RADIUS, ...config };
+  constructor(scene, config, navGrid) {
+    this.config = { radius: RADIUS, navGrid, ...config };
     this.ai = new PatrolAI(this.config);
     this.radius = RADIUS;
 

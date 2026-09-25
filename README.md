@@ -56,11 +56,12 @@ js/
   ai/
     PatrolAI.js          machine à états (PATROL → ALERT → CHASE → SEARCH → RETURN)
     Detection.js          distance + cône de vision + ligne de vue
+    Pathfinding.js         grille de navigation + A*, utilisée en poursuite/recherche
   world/
     Collision.js          monde de collision (AABB), résolution de cercle, ligne de vue
     GardenBuilder.js       construit les haies/décors 3D à partir d'un niveau
   levels/
-    level01.js             données du niveau 1 (déterministe)
+    level01.js, level02.js  données des niveaux (déterministes)
     LevelLoader.js          registre des niveaux
   ui/HUD.js               vies, écrans (pause/victoire/défaite/menu), indicateur "repéré"
   save/SaveManager.js     progression + réglages en localStorage (prêt pour sync JIEE PLAY)
@@ -72,45 +73,56 @@ l'enregistrer dans `LevelLoader.js`. Rien d'autre à modifier.
 
 ## Historique des correctifs
 
-- **Contact avec les gardes** : un garde blesse désormais au contact peu
-  importe son état (avant, seul l'état de poursuite comptait — un garde en
-  patrouille ne faisait rien).
-- **Zoom arrière** : la distance maximale de caméra est passée de 16 à 38
-  unités (et le brouillard a été repoussé en conséquence) pour permettre une
-  vraie vue d'ensemble du jardin.
-- **Trajectoires de patrouille** : resserrées pour ne plus frôler les haies
-  (un garde à quelques centimètres d'un mur restait bloqué contre lui au lieu
-  d'avancer).
-- **Tonton Jiee** : nouvelle silhouette humaine — jambes et tête de
-  proportions normales, exagération concentrée sur les trapèzes/épaules/bras
-  en pose "double biceps" permanente.
-- **Réalisme du décor** : herbe, chemins et haies utilisent désormais des
-  textures procédurales tissées (au lieu de couleurs plates), et une ombre de
-  contact douce ancre les personnages au sol.
+- **v2 — passe complète (IA, niveau 2, polish visuel)**
+  - **Navigation des gardes** : ajout d'une vraie grille de pathfinding
+    (`js/ai/Pathfinding.js`, A* sur grille 0.4m). Un garde ne marche en ligne
+    directe que si rien ne bloque ; sinon il calcule un chemin qui contourne
+    réellement les haies, recalculé périodiquement pendant la poursuite.
+  - **Niveau 2** (`level02.js`) : labyrinthe plus dense, 3 gardes (STRESS,
+    GOUMIN, PANIQUE) au lieu de 2, champ de vision plus large, corridors plus
+    étroits — vraie progression de difficulté, pas juste "plus rapide".
+  - **Occlusion caméra** : la caméra ne traverse plus les haies/décors —
+    un rayon détecte l'obstacle et rapproche la caméra devant lui.
+  - **Ambiance** : particules de pollen en suspension dans le jardin.
+- **v1**
+  - **Contact avec les gardes** : un garde blesse désormais au contact peu
+    importe son état (avant, seul l'état de poursuite comptait).
+  - **Zoom arrière** : distance maximale de caméra passée de 16 à 38 unités.
+  - **Trajectoires de patrouille** : resserrées pour ne plus frôler les haies.
+  - **Tonton Jiee** : nouvelle silhouette humaine, exagération concentrée sur
+    les trapèzes/épaules/bras en pose "double biceps" permanente.
+  - **Réalisme du décor** : textures procédurales tissées + ombre de contact.
 
 ## Ce qui est fonctionnel dès cette version
 
 - Déplacement libre 360° avec accélération/décélération, joystick tactile fluide.
-- Caméra aérienne inclinée (pas plate), zoom pincement + boutons, distance bornée.
-- Jardin avec haies formant un vrai labyrinthe, arbres/bancs/statues/fontaine/pots.
-- Deux gardes : patrouille sur trajectoire fixe, cône de vision + ligne de vue
-  bloquée par les haies, poursuite, recherche brève puis retour en patrouille.
-- Système de vies (5), invincibilité courte après un coup, feedback visuel/sonore.
-- Personnage bonus DJÊ (+1 vie), objectif Tonton Jiee avec zone de sécurité.
-- Pause, écran de victoire/défaite, niveau rejouable à l'identique (déterministe).
+- Caméra aérienne inclinée (pas plate), zoom pincement + boutons, distance
+  bornée, et occlusion (ne traverse plus les haies/décors).
+- Deux niveaux jouables avec une vraie progression de difficulté (plus de
+  gardes, labyrinthe plus dense, champ de vision plus large au niveau 2).
+- Trois gardes maximum : patrouille sur trajectoire fixe, cône de vision +
+  ligne de vue bloquée par les haies, poursuite avec pathfinding réel
+  (contournement des haies via A* sur grille, pas seulement en ligne droite),
+  recherche brève puis retour en patrouille.
+- Système de vies (5), contact avec un garde toujours dangereux (patrouille
+  ou poursuite), invincibilité courte après un coup, feedback visuel/sonore.
+- Personnage bonus DJÊ (+1 vie), objectif Tonton Jiee (silhouette humaine à
+  la musculature du haut du corps exagérée) avec zone de sécurité.
+- Pause, écran de victoire/défaite, niveaux rejouables à l'identique (déterministe).
 - PWA installable (manifest + service worker + icônes).
 - Architecture multilingue (fr/en) et sauvegarde locale de la progression.
+- Jardin avec haies/textures procédurales, arbres/bancs/statues/fontaine/pots,
+  particules d'ambiance.
 
 ## Simplifications assumées pour cette première génération
 
 Conformément à la consigne de ne rien supprimer silencieusement, voici ce qui
 a été simplifié et pourquoi, avec la piste d'amélioration :
 
-- **Déplacement des gardes en poursuite** : les gardes vont en ligne directe
-  vers le joueur puis glissent le long des haies via la même résolution de
-  collision que le joueur (ils ne les traversent jamais), plutôt qu'un vrai
-  pathfinding A*/navmesh. Assez crédible dans ce niveau, mais à remplacer par
-  un vrai système de navigation pour des labyrinthes plus denses.
+- **Déplacement des gardes en poursuite** : navigation par grille (A*, cellules
+  de 0.4m) plutôt qu'un vrai navmesh — largement suffisant pour ce type de
+  labyrinthe et bon marché à recalculer sur mobile, mais moins précis qu'un
+  navmesh pour des géométries très fines ou beaucoup de gardes actifs à la fois.
 - **Modèles 3D** : primitives géométriques stylisées (capsules/sphères) plutôt
   que des modèles importés avec textures détaillées, pour rester léger et
   éviter une dépendance à des assets externes indisponibles à cette étape.

@@ -109,7 +109,31 @@ export function buildGarden(scene, level, collisionWorld) {
   });
   scene.add(decoGroup);
 
-  return { ground, hedgeGroup, decoGroup };
+  const atmosphere = addAtmosphere(scene, bounds);
+
+  return { ground, hedgeGroup, decoGroup, atmosphere };
+}
+
+function addAtmosphere(scene, bounds) {
+  const count = 60;
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+    positions[i * 3 + 1] = 0.3 + Math.random() * 2.2;
+    positions[i * 3 + 2] = bounds.minZ + Math.random() * (bounds.maxZ - bounds.minZ);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({
+    color: 0xf2ead9,
+    size: 0.045,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false
+  });
+  const points = new THREE.Points(geometry, material);
+  scene.add(points);
+  return points;
 }
 
 function addPathPatch(scene, x, z, size) {

@@ -9,6 +9,7 @@ import { Enemy } from '../entities/Enemy.js';
 import { PositiveCharacter } from '../entities/PositiveCharacter.js';
 import { TontonJiee } from '../entities/TontonJiee.js';
 import { GuardState } from '../ai/PatrolAI.js';
+import { NavGrid } from '../ai/Pathfinding.js';
 import { LevelLoader } from '../levels/LevelLoader.js';
 import { HUD } from '../ui/HUD.js';
 import { saveManager } from '../save/SaveManager.js';
@@ -154,10 +155,16 @@ export class Game {
     this.maxLives = level.lives;
     this.lives = level.lives;
 
-    buildGarden(this.scene, level, this.collisionWorld);
+    const { hedgeGroup, decoGroup, atmosphere } = buildGarden(this.scene, level, this.collisionWorld);
+    this.cameraController.setOccluders([hedgeGroup, decoGroup]);
+    this._atmosphere = atmosphere;
+
+    // Built once per level from the same collision data the player uses;
+    // shared by every guard so pathfinding for chase/search stays cheap.
+    this.navGrid = new NavGrid(this.collisionWorld, 0.4, 0.3);
 
     this._entities.player = new Player(this.scene, level.playerStart.x, level.playerStart.z);
-    this._entities.enemies = level.enemies.map((cfg) => new Enemy(this.scene, cfg));
+    this._entities.enemies = level.enemies.map((cfg) => new Enemy(this.scene, cfg, this.navGrid));
     this._entities.positives = level.positiveCharacters.map((cfg) => new PositiveCharacter(this.scene, cfg));
     this._entities.tonton = new TontonJiee(this.scene, level.tontonJiee.x, level.tontonJiee.z);
 
@@ -249,6 +256,11 @@ export class Game {
     });
 
     tonton.update(dt);
+
+    if (this._atmosphere) {
+      this._atmosphere.rotation.y += dt * 0.02;
+      this._atmosphere.position.y = Math.sin(this._clock.elapsedTime * 0.4) * 0.06;
+    }
 
     if (anyTouching && !player.isInvincible()) {
       const applied = player.hit();

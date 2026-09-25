@@ -79,6 +79,24 @@ export class CollisionWorld {
     );
   }
 
+  // Same segment-vs-AABB test as line-of-sight, but against movement
+  // blockers instead of vision blockers, and with the obstacle inflated
+  // by `radius` so a circular mover (not just a point) is accounted for.
+  // Used by pathfinding to check "can I walk straight from A to B".
+  segmentBlockedByMovement(ax, az, bx, bz, radius = 0.3) {
+    for (const box of this.obstacles) {
+      if (!box.blocksMovement) continue;
+      const inflated = {
+        minX: box.minX - radius,
+        maxX: box.maxX + radius,
+        minZ: box.minZ - radius,
+        maxZ: box.maxZ + radius
+      };
+      if (this._segmentIntersectsBox(ax, az, bx, bz, inflated)) return true;
+    }
+    return false;
+  }
+
   // Segment vs AABB test (Liang-Barsky), used for line-of-sight / hiding behind hedges.
   lineOfSightBlocked(ax, az, bx, bz) {
     for (const box of this.obstacles) {

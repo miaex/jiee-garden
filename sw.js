@@ -3,7 +3,7 @@
 // Note: three.js is loaded from a CDN; it is cached opportunistically
 // but the very first load requires network access.
 
-const CACHE_NAME = 'jiee-garden-v1';
+const CACHE_NAME = 'jiee-garden-v2';
 
 const APP_SHELL = [
   './',
@@ -23,11 +23,13 @@ const APP_SHELL = [
   './js/world/Collision.js',
   './js/ai/PatrolAI.js',
   './js/ai/Detection.js',
+  './js/ai/Pathfinding.js',
   './js/ui/HUD.js',
   './js/save/SaveManager.js',
   './js/i18n/i18n.js',
   './js/i18n/locales.js',
   './js/levels/level01.js',
+  './js/levels/level02.js',
   './js/levels/LevelLoader.js',
   './assets/icons/icon.svg',
   './assets/icons/icon-192.png',
