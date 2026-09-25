@@ -1,0 +1,16 @@
+{
+  "name": "Jiee Garden",
+  "short_name": "JieeGarden",
+  "description": "Traverse le jardin-labyrinthe, évite les gardes et rejoins Tonton Jiee.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1f3320",
+  "theme_color": "#1f3320",
+  "icons": [
+    { "src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }
+  ]
+}

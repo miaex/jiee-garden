@@ -1,0 +1,126 @@
+:root{
+  --ink:#182b18;
+  --leaf-deep:#1f3320;
+  --leaf:#3a5c34;
+  --moss:#6f9457;
+  --earth:#8a6b47;
+  --cream:#f2ead9;
+  --heart:#d1473a;
+  --heart-off:#3d2f2a;
+  --accent:#e7b559;
+  --danger:#e2574c;
+  --radius:14px;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
+
+html,body{
+  margin:0; padding:0; width:100%; height:100%;
+  overflow:hidden; background:var(--leaf-deep); color:var(--cream);
+  overscroll-behavior:none; touch-action:none;
+}
+
+#app{position:fixed; inset:0; overflow:hidden;}
+
+#game-canvas{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none;}
+
+/* ---------- HUD ---------- */
+#hud{
+  position:absolute; top:0; left:0; right:0;
+  display:flex; align-items:flex-start; justify-content:space-between;
+  padding: max(12px, env(safe-area-inset-top)) 14px 0 14px;
+  pointer-events:none; z-index:10;
+}
+.hud-row{display:flex; align-items:center; gap:6px;}
+#lives{font-size:22px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));}
+.heart{display:inline-block; transition: transform .15s ease;}
+.heart.lost{opacity:.35;}
+.heart.pulse{animation:pulse .3s ease;}
+@keyframes pulse{0%{transform:scale(1.6);}100%{transform:scale(1);}}
+
+#level-label{
+  font-size:13px; font-weight:600; letter-spacing:.02em;
+  background:rgba(24,43,24,.55); padding:6px 12px; border-radius:20px;
+  backdrop-filter: blur(4px);
+}
+
+.icon-btn{
+  pointer-events:auto;
+  width:42px; height:42px; border-radius:50%;
+  border:1px solid rgba(242,234,217,.25);
+  background:rgba(24,43,24,.55); color:var(--cream);
+  font-size:16px; display:flex; align-items:center; justify-content:center;
+  backdrop-filter: blur(4px);
+}
+.icon-btn:active{background:rgba(24,43,24,.85);}
+.icon-btn.small{width:38px; height:38px; font-size:20px; font-weight:700;}
+
+#status-hint{
+  position:absolute; top:64px; left:50%; transform:translateX(-50%);
+  font-size:13px; font-weight:600; padding:6px 14px; border-radius:20px;
+  background:rgba(226,87,76,.85); color:#fff; opacity:0; pointer-events:none;
+  transition:opacity .25s ease, transform .25s ease; z-index:10;
+}
+#status-hint.show{opacity:1; transform:translateX(-50%) translateY(4px);}
+
+/* ---------- Joystick ---------- */
+#joystick-zone{
+  position:absolute; left:0; bottom:0; width:45%; height:45%;
+  z-index:10; touch-action:none;
+}
+#joystick-base{
+  position:absolute; width:108px; height:108px; border-radius:50%;
+  background:rgba(242,234,217,.12); border:2px solid rgba(242,234,217,.35);
+  left:34px; bottom:max(34px, env(safe-area-inset-bottom));
+  display:flex; align-items:center; justify-content:center;
+  opacity:.9;
+}
+#joystick-knob{
+  width:46px; height:46px; border-radius:50%;
+  background:rgba(231,181,89,.85); border:2px solid rgba(255,255,255,.5);
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+
+/* ---------- Zoom buttons ---------- */
+#zoom-controls{
+  position:absolute; right:14px; bottom:max(34px, env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; gap:8px; z-index:10;
+}
+
+/* ---------- Screens ---------- */
+.screen{
+  position:absolute; inset:0; z-index:30;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(15,26,15,.72); backdrop-filter: blur(3px);
+}
+.screen.hidden{display:none;}
+
+.screen-panel{
+  width:min(340px, 86vw);
+  background:linear-gradient(180deg, #24391f, #1a2a17);
+  border:1px solid rgba(242,234,217,.15);
+  border-radius:20px; padding:28px 24px; text-align:center;
+  box-shadow:0 20px 40px rgba(0,0,0,.4);
+}
+.screen-panel h1{margin:0 0 6px; font-size:26px; color:var(--accent); letter-spacing:.01em;}
+.screen-panel h2{margin:0 0 6px; font-size:21px; color:var(--accent);}
+.screen-panel p{margin:0 0 18px; font-size:14px; color:rgba(242,234,217,.8); line-height:1.4;}
+
+.menu-btn{
+  display:block; width:100%; padding:13px; margin-top:10px;
+  border:none; border-radius:12px; font-size:15px; font-weight:600;
+  background:var(--accent); color:#22300f; cursor:pointer;
+}
+.menu-btn:active{transform:scale(.98);}
+.menu-btn.ghost{background:transparent; color:var(--cream); border:1px solid rgba(242,234,217,.3);}
+
+.progress-track{
+  width:100%; height:6px; border-radius:4px; background:rgba(242,234,217,.15);
+  overflow:hidden; margin-top:6px;
+}
+.progress-fill{height:100%; width:0%; background:var(--accent); transition:width .2s ease;}
+
+@media (orientation:landscape) and (max-height:480px){
+  .screen-panel{padding:18px 22px;}
+}

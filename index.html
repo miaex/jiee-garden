@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Jiee Garden — Rejoins Tonton Jiee</title>
+<meta name="theme-color" content="#1f3320">
+<meta name="description" content="Traverse le jardin-labyrinthe, évite les gardes et rejoins Tonton Jiee.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="app">
+
+    <!-- 3D render target -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD overlay -->
+    <div id="hud">
+      <div id="lives" class="hud-row"></div>
+      <div id="level-label" class="hud-row"></div>
+      <button id="pause-btn" class="icon-btn" aria-label="Pause">❚❚</button>
+    </div>
+
+    <!-- Status hint (detection state) -->
+    <div id="status-hint"></div>
+
+    <!-- Virtual joystick -->
+    <div id="joystick-zone">
+      <div id="joystick-base">
+        <div id="joystick-knob"></div>
+      </div>
+    </div>
+
+    <!-- Zoom buttons (secondary to pinch) -->
+    <div id="zoom-controls">
+      <button id="zoom-in" class="icon-btn small">+</button>
+      <button id="zoom-out" class="icon-btn small">–</button>
+    </div>
+
+    <!-- Screens -->
+    <div id="screen-loading" class="screen">
+      <div class="screen-panel">
+        <h1>Jiee Garden</h1>
+        <p id="loading-text">Préparation du jardin…</p>
+        <div class="progress-track"><div id="loading-bar" class="progress-fill"></div></div>
+      </div>
+    </div>
+
+    <div id="screen-pause" class="screen hidden">
+      <div class="screen-panel">
+        <h2 data-i18n="pause.title">Pause</h2>
+        <button class="menu-btn" id="resume-btn" data-i18n="pause.resume">Reprendre</button>
+        <button class="menu-btn" id="restart-btn" data-i18n="pause.restart">Recommencer le niveau</button>
+        <button class="menu-btn" id="sound-toggle-btn">Son : activé</button>
+        <button class="menu-btn ghost" id="quit-btn" data-i18n="pause.quit">Menu</button>
+      </div>
+    </div>
+
+    <div id="screen-victory" class="screen hidden">
+      <div class="screen-panel">
+        <h2 data-i18n="victory.title">TU ES EN SÉCURITÉ !</h2>
+        <p data-i18n="victory.subtitle">Tonton Jiee t'a accueilli à bras ouverts.</p>
+        <button class="menu-btn" id="next-level-btn" data-i18n="victory.next">Niveau suivant</button>
+        <button class="menu-btn ghost" id="victory-restart-btn" data-i18n="victory.replay">Rejouer</button>
+      </div>
+    </div>
+
+    <div id="screen-gameover" class="screen hidden">
+      <div class="screen-panel">
+        <h2 data-i18n="gameover.title">NIVEAU ÉCHOUÉ</h2>
+        <p data-i18n="gameover.subtitle">Les soucis t'ont rattrapé…</p>
+        <button class="menu-btn" id="gameover-restart-btn" data-i18n="gameover.replay">Réessayer</button>
+      </div>
+    </div>
+
+    <div id="screen-menu" class="screen hidden">
+      <div class="screen-panel">
+        <h1>Jiee Garden</h1>
+        <p data-i18n="menu.subtitle">Retrouve Tonton Jiee sans te faire attraper.</p>
+        <button class="menu-btn" id="play-btn" data-i18n="menu.play">Jouer</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
