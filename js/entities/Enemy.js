@@ -40,6 +40,17 @@ export class Enemy {
     this.eyeR.position.set(0.06, 0.74, 0.14);
     this.root.add(this.eyeL, this.eyeR);
 
+    // Angled eyebrows — the single detail that reads as "hostile" from a
+    // distance, without needing a full expressive face rig.
+    const browGeo = new THREE.BoxGeometry(0.075, 0.02, 0.025);
+    this.browL = new THREE.Mesh(browGeo, dark);
+    this.browL.position.set(-0.065, 0.775, 0.15);
+    this.browL.rotation.z = -0.4;
+    this.browR = new THREE.Mesh(browGeo, dark);
+    this.browR.position.set(0.065, 0.775, 0.15);
+    this.browR.rotation.z = 0.4;
+    this.root.add(this.browL, this.browR);
+
     const limbGeo = new THREE.CapsuleGeometry(0.05, 0.2, 3, 6);
     this.legL = new THREE.Mesh(limbGeo, skin);
     this.legL.position.set(-0.1, 0.18, 0);
@@ -59,6 +70,14 @@ export class Enemy {
     this.alertMark.position.y = 1.05;
     this.alertMark.visible = false;
     this.root.add(this.alertMark);
+
+    // A small head spike/tuft — purely silhouette flavor so guards don't
+    // read as identical blobs beyond their name tag and color.
+    const tuftMat = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
+    this.tuft = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.11, 6), tuftMat);
+    this.tuft.position.set(0, 0.87, -0.02);
+    this.tuft.rotation.x = -0.25;
+    this.root.add(this.tuft);
   }
 
   _buildLabel(name) {

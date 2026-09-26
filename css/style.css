@@ -64,6 +64,25 @@ html,body{
 }
 #status-hint.show{opacity:1; transform:translateX(-50%) translateY(4px);}
 
+/* ---------- Tension feedback ---------- */
+#tension-vignette{
+  position:absolute; inset:0; pointer-events:none; z-index:9;
+  background: radial-gradient(ellipse at center, rgba(180,20,20,0) 45%, rgba(140,10,10,0.55) 100%);
+  opacity:0; transition:opacity .25s ease;
+}
+#hit-flash{
+  position:absolute; inset:0; pointer-events:none; z-index:15;
+  background: rgba(220,40,30,0.45);
+  opacity:0;
+}
+#hit-flash.flash{
+  animation: hitFlash .35s ease-out;
+}
+@keyframes hitFlash{
+  0%{opacity:.85;}
+  100%{opacity:0;}
+}
+
 /* ---------- Joystick ---------- */
 #joystick-zone{
   position:absolute; left:0; bottom:0; width:45%; height:45%;

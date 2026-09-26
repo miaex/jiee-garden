@@ -6,6 +6,8 @@ export class HUD {
     this.levelLabelEl = document.getElementById('level-label');
     this.statusEl = document.getElementById('status-hint');
     this._statusTimeout = null;
+    this.tensionEl = document.getElementById('tension-vignette');
+    this.hitFlashEl = document.getElementById('hit-flash');
 
     this.screens = {
       loading: document.getElementById('screen-loading'),
@@ -58,6 +60,18 @@ export class HUD {
 
   hideStatus() {
     this.statusEl.classList.remove('show');
+  }
+
+  // value 0..1 — how close/exposed the player currently is to a guard.
+  setTension(value) {
+    this.tensionEl.style.opacity = Math.max(0, Math.min(1, value)).toFixed(2);
+  }
+
+  flashHit() {
+    this.hitFlashEl.classList.remove('flash');
+    // Force reflow so the animation restarts even on rapid repeated hits.
+    void this.hitFlashEl.offsetWidth;
+    this.hitFlashEl.classList.add('flash');
   }
 
   showScreen(name) {

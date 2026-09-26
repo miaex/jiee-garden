@@ -3,7 +3,7 @@
 // Note: three.js is loaded from a CDN; it is cached opportunistically
 // but the very first load requires network access.
 
-const CACHE_NAME = 'jiee-garden-v2';
+const CACHE_NAME = 'jiee-garden-v3';
 
 const APP_SHELL = [
   './',

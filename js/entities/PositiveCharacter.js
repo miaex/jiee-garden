@@ -27,6 +27,19 @@ export class PositiveCharacter {
     this.body.castShadow = true;
     this.root.add(this.body);
 
+    const eyeGeo = new THREE.SphereGeometry(0.03, 6, 6);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x2a1a10 });
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.08, 0.54, 0.2);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.position.set(0.08, 0.54, 0.2);
+    this.root.add(eyeL, eyeR);
+
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 6, 10, Math.PI), eyeMat);
+    smile.position.set(0, 0.46, 0.19);
+    smile.rotation.x = Math.PI;
+    this.root.add(smile);
+
     const heart = new THREE.Mesh(
       new THREE.SphereGeometry(0.08, 8, 8),
       new THREE.MeshStandardMaterial({ color: 0xd1473a, emissive: 0x440000 })

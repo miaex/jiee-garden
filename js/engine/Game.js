@@ -34,6 +34,7 @@ export class Game {
 
     this._clock = new THREE.Clock();
     this._entities = { enemies: [], positives: [], tonton: null, player: null };
+    this._heartbeatTimer = 0;
 
     this._initRenderer();
     this._initScene();
@@ -47,6 +48,9 @@ export class Game {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.08;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this._resize();
     window.addEventListener('resize', () => this._resize());
   }
@@ -63,8 +67,10 @@ export class Game {
 
   _initScene() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x8fb7d6);
-    this.scene.fog = new THREE.Fog(0x8fb7d6, 30, 62);
+    this.scene.background = new THREE.Color(0x9cc6de);
+    this.scene.fog = new THREE.Fog(0x9cc6de, 30, 62);
+
+    this._buildSkyDome();
 
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
     this.cameraController = new CameraController(this.camera);
@@ -72,6 +78,31 @@ export class Game {
     this._initSceneLighting();
 
     this.collisionWorld = new CollisionWorld();
+  }
+
+  // A big inward-facing gradient sphere reads as an actual sky instead of
+  // a flat color — cheap (one mesh, one small canvas texture, no shader
+  // work) but a large jump in how "outdoor" the scene feels.
+  _buildSkyDome() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 128);
+    gradient.addColorStop(0, '#4f8fc4');
+    gradient.addColorStop(0.55, '#9cc6de');
+    gradient.addColorStop(1, '#dcecf0');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 2, 128);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const sky = new THREE.Mesh(
+      new THREE.SphereGeometry(70, 16, 16),
+      new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, fog: false })
+    );
+    this.skyDome = sky;
+    this.scene.add(sky);
   }
 
   _initSceneLighting() {
@@ -174,6 +205,8 @@ export class Game {
     this.hud.renderLives(this.lives, this.maxLives);
     this.hud.hideAllScreens();
     this.hud.hideStatus();
+    this.hud.setTension(0);
+    this._heartbeatTimer = 0;
 
     this.state = GameState.PLAYING;
     this._clock.getDelta(); // reset clock so a long load doesn't create one huge dt
@@ -188,6 +221,7 @@ export class Game {
       this.scene.remove(this.scene.children[0]);
     }
     this.collisionWorld = new CollisionWorld();
+    this.scene.add(this.skyDome);
     this._initSceneLighting();
   }
 
@@ -230,6 +264,7 @@ export class Game {
 
     let anyAlertOrChase = false;
     let anyTouching = false;
+    let danger = 0;
 
     enemies.forEach((enemy) => {
       const state = enemy.update(dt, { x: player.position.x, z: player.position.z }, this.collisionWorld);
@@ -240,7 +275,27 @@ export class Game {
       // being caught mid-chase, which is what the design calls for.
       const dist = Math.hypot(player.position.x - enemy.position.x, player.position.z - enemy.position.z);
       if (dist < player.radius + enemy.radius + 0.05) anyTouching = true;
+
+      // Tension builds as the player nears an unalerted guard's detection
+      // range, and maxes out the instant one is alert/chasing — this is
+      // what gives the "should I even risk this path" feeling its edge.
+      if (state === GuardState.ALERT || state === GuardState.CHASE) {
+        danger = 1;
+      } else {
+        const threshold = enemy.config.viewDistance * 1.4;
+        const proximity = 1 - dist / threshold;
+        if (proximity > danger) danger = Math.max(0, proximity);
+      }
     });
+
+    this.hud.setTension(danger * 0.85);
+    this.cameraController.setDanger(danger);
+
+    this._heartbeatTimer -= dt * 1000;
+    if (danger > 0.12 && this._heartbeatTimer <= 0) {
+      audioManager.playHeartbeat(danger);
+      this._heartbeatTimer = 1100 - danger * 750; // faster thumps as danger rises
+    }
 
     if (anyAlertOrChase) {
       this.hud.showStatus('status.spotted', 0);
@@ -291,6 +346,7 @@ export class Game {
     this.lives -= 1;
     this.hud.renderLives(this.lives, this.maxLives);
     this.hud.pulseLastHeart(this.lives);
+    this.hud.flashHit();
     audioManager.playHit();
     if (navigator.vibrate) navigator.vibrate(120);
 

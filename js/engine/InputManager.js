@@ -93,8 +93,16 @@ export class InputManager {
 
     const nx = dx / this._maxKnobDist;
     const ny = dy / this._maxKnobDist;
-    // Screen down (positive Y) should move the character toward the camera (positive Z in our top-down rig).
-    this.moveVector = { x: clampMag(nx), z: clampMag(ny) };
+    const DEADZONE = 0.12; // ignore tiny thumb jitter near center so idle doesn't read as "drifting"
+    const mag = Math.hypot(nx, ny);
+    if (mag < DEADZONE) {
+      this.moveVector = { x: 0, z: 0 };
+      return;
+    }
+    // Rescale so input still reaches full magnitude just past the deadzone,
+    // instead of every direction feeling slightly muted.
+    const scale = (mag - DEADZONE) / (1 - DEADZONE) / mag;
+    this.moveVector = { x: clampMag(nx * scale), z: clampMag(ny * scale) };
   }
 
   _bindPinchZoom() {

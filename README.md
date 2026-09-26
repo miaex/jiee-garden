@@ -73,6 +73,18 @@ l'enregistrer dans `LevelLoader.js`. Rien d'autre à modifier.
 
 ## Historique des correctifs
 
+- **v3 — sensation de jeu, réalisme visuel, personnages**
+  - **Contrôles** : zone morte sur le joystick (fini le tremblement au repos),
+    accélération/rotation plus nerveuses, bruit de pas.
+  - **Tension** : un vignettage rouge discret et un battement de cœur
+    s'intensifient à l'approche d'un garde non alerté (avant même d'être vu),
+    et la caméra élargit légèrement son champ en cas de danger. Flash rouge
+    à l'écran au moment d'un coup.
+  - **Réalisme visuel** : ciel en dégradé (au lieu d'une couleur plate),
+    tone mapping cinéma (ACES), relief (bump map) sur l'herbe et les haies.
+  - **Personnages** : Tonton Jiee a un bandeau et des "abdos" visibles ; le
+    nounours porte un nœud papillon ; les gardes ont des sourcils obliques
+    menaçants et une petite mèche sur la tête ; Djê a un vrai visage.
 - **v2 — passe complète (IA, niveau 2, polish visuel)**
   - **Navigation des gardes** : ajout d'une vraie grille de pathfinding
     (`js/ai/Pathfinding.js`, A* sur grille 0.4m). Un garde ne marche en ligne

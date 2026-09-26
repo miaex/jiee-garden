@@ -1,9 +1,10 @@
 import * as THREE from 'three';
+import { audioManager } from '../engine/AudioManager.js';
 
-const MAX_SPEED = 3.4;
-const ACCEL = 14;
-const DECEL = 18;
-const TURN_SPEED = 10;
+const MAX_SPEED = 3.7;
+const ACCEL = 17;
+const DECEL = 20;
+const TURN_SPEED = 13;
 const RADIUS = 0.32;
 const INVINCIBLE_MS = 1200;
 
@@ -22,6 +23,7 @@ export class Player {
     scene.add(this.root);
 
     this._walkT = 0;
+    this._stepCooldown = 0;
   }
 
   _buildMesh() {
@@ -53,6 +55,19 @@ export class Player {
     this.noseMesh = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), nose);
     this.noseMesh.position.set(0, 0.77, 0.24);
     this.root.add(this.noseMesh);
+
+    // A small bow tie — the one accessory detail that reads clearly at
+    // the game's usual camera distance and reinforces the "toy" read.
+    const bowMat = new THREE.MeshStandardMaterial({ color: 0xb0392f, roughness: 0.6 });
+    const bowL = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.09, 4), bowMat);
+    bowL.rotation.z = Math.PI / 2;
+    bowL.position.set(-0.045, 0.58, 0.19);
+    const bowR = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.09, 4), bowMat);
+    bowR.rotation.z = -Math.PI / 2;
+    bowR.position.set(0.045, 0.58, 0.19);
+    const bowKnot = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), bowMat);
+    bowKnot.position.set(0, 0.58, 0.19);
+    this.root.add(bowL, bowR, bowKnot);
 
     const limbGeo = new THREE.CapsuleGeometry(0.055, 0.22, 3, 6);
     this.armL = new THREE.Mesh(limbGeo, fur);
@@ -117,8 +132,14 @@ export class Player {
     const moving = this.speed > 0.15;
     if (moving) {
       this._walkT += dt * (3 + this.speed * 1.6);
+      this._stepCooldown -= dt;
+      if (this._stepCooldown <= 0) {
+        audioManager.playFootstep();
+        this._stepCooldown = Math.max(0.16, 0.42 - this.speed * 0.06);
+      }
     } else {
       this._walkT += dt * 1.2; // gentle idle sway
+      this._stepCooldown = 0;
     }
     const swing = moving ? Math.sin(this._walkT) * 0.55 : Math.sin(this._walkT) * 0.06;
     this.legL.rotation.x = swing;

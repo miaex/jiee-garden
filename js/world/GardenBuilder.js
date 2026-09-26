@@ -29,21 +29,63 @@ function makeNoiseTexture({ base, variants, size = 128, cell = 3 }) {
   return texture;
 }
 
+function makeBumpTexture({ size = 128, cell = 2, intensity = 0.5 }) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, size, size);
+  for (let y = 0; y < size; y += cell) {
+    for (let x = 0; x < size; x += cell) {
+      const v = Math.floor(128 + (Math.random() - 0.5) * 255 * intensity);
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(x, y, cell + 1, cell + 1);
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
 const grassTex = makeNoiseTexture({ base: '#4a7a3f', variants: ['#3f6b36', '#5c8f4a', '#436f3b'], cell: 2 });
 grassTex.repeat.set(10, 10);
+const grassBump = makeBumpTexture({ cell: 2, intensity: 0.35 });
+grassBump.repeat.set(10, 10);
 
 const pathTex = makeNoiseTexture({ base: '#c9b183', variants: ['#b89b6c', '#d8c299', '#a98a5c'], cell: 3 });
 pathTex.repeat.set(3, 3);
 
 const hedgeTex = makeNoiseTexture({ base: '#2f5230', variants: ['#264322', '#3c6a3b', '#22391f'], cell: 2 });
 hedgeTex.repeat.set(2, 1);
+const hedgeBump = makeBumpTexture({ cell: 3, intensity: 0.6 });
+hedgeBump.repeat.set(2, 1);
 
 // Reusable geometries/materials so many instances share GPU resources.
 const materials = {
-  ground: new THREE.MeshStandardMaterial({ map: grassTex, color: 0xffffff, roughness: 0.95 }),
+  ground: new THREE.MeshStandardMaterial({
+    map: grassTex,
+    bumpMap: grassBump,
+    bumpScale: 0.04,
+    color: 0xffffff,
+    roughness: 0.95
+  }),
   path: new THREE.MeshStandardMaterial({ map: pathTex, color: 0xffffff, roughness: 1 }),
-  hedge: new THREE.MeshStandardMaterial({ map: hedgeTex, color: 0xffffff, roughness: 0.85 }),
-  hedgeTop: new THREE.MeshStandardMaterial({ map: hedgeTex, color: 0xcfe8cf, roughness: 0.85 }),
+  hedge: new THREE.MeshStandardMaterial({
+    map: hedgeTex,
+    bumpMap: hedgeBump,
+    bumpScale: 0.08,
+    color: 0xffffff,
+    roughness: 0.85
+  }),
+  hedgeTop: new THREE.MeshStandardMaterial({
+    map: hedgeTex,
+    bumpMap: hedgeBump,
+    bumpScale: 0.08,
+    color: 0xcfe8cf,
+    roughness: 0.85
+  }),
   trunk: new THREE.MeshStandardMaterial({ color: 0x6b4a30, roughness: 0.9 }),
   foliage: new THREE.MeshStandardMaterial({ map: hedgeTex, color: 0xdfead0, roughness: 0.9 }),
   bush: new THREE.MeshStandardMaterial({ map: hedgeTex, color: 0xdfead0, roughness: 0.9 }),

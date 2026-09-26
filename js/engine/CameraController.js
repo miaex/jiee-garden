@@ -7,6 +7,7 @@ const PITCH_DEG = 55; // angled top-down, not a flat orthographic look
 const FOLLOW_LERP = 6;
 const ZOOM_LERP = 8;
 const MIN_SAFE_DIST = 2.5; // never let occlusion push the camera closer than this
+const BASE_FOV = 45;
 
 export class CameraController {
   constructor(camera) {
@@ -18,6 +19,7 @@ export class CameraController {
     this._pitch = (PITCH_DEG * Math.PI) / 180;
     this._raycaster = new THREE.Raycaster();
     this._occluders = [];
+    this._targetFov = BASE_FOV;
   }
 
   // Meshes/groups the camera should not clip through (hedges, solid
@@ -32,6 +34,12 @@ export class CameraController {
 
   setZoomButtonsStep(sign) {
     this.addZoom(sign * 3.2);
+  }
+
+  // 0..1 danger level — subtly widens the FOV for a mild "adrenaline" push
+  // when a guard is alert/chasing, without being a gimmicky camera shake.
+  setDanger(value) {
+    this._targetFov = BASE_FOV + clamp(value, 0, 1) * 6;
   }
 
   follow(targetPos, dt) {
@@ -56,6 +64,11 @@ export class CameraController {
 
     this.camera.position.copy(camPos);
     this.camera.lookAt(this.currentLookTarget);
+
+    if (Math.abs(this.camera.fov - this._targetFov) > 0.02) {
+      this.camera.fov += (this._targetFov - this.camera.fov) * Math.min(1, 5 * dt);
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   // If a hedge/decoration sits between the look target and the desired

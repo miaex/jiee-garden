@@ -42,7 +42,15 @@ class AudioManager {
   }
 
   playFootstep() {
-    this._tone(180, 0.06, 'triangle', 0.03);
+    this._tone(180, 0.06, 'triangle', 0.025);
+  }
+
+  // Low, throttled thump — called more frequently as danger increases,
+  // so the player feels a guard's presence building before they're seen.
+  playHeartbeat(intensity = 0.5) {
+    const gain = 0.05 + intensity * 0.08;
+    this._tone(70, 0.14, 'sine', gain);
+    this._tone(55, 0.16, 'sine', gain * 0.7, 0.09);
   }
 
   playDetected() {

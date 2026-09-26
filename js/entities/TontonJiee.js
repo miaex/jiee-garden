@@ -52,6 +52,19 @@ export class TontonJiee {
     this.pecR.position.set(0.2, 1.32, 0.22);
     this.root.add(this.pecL, this.pecR);
 
+    // --- Comic "six-pack" ridges peeking below the shirt — reads instantly
+    // even at a distance/top-down angle, which a texture wouldn't. ---
+    const abGeo = new THREE.CapsuleGeometry(0.045, 0.1, 2, 6);
+    for (let i = 0; i < 3; i++) {
+      const abL = new THREE.Mesh(abGeo, skin);
+      abL.rotation.z = Math.PI / 2;
+      abL.position.set(-0.09, 0.98 - i * 0.09, 0.28);
+      const abR = new THREE.Mesh(abGeo, skin);
+      abR.rotation.z = Math.PI / 2;
+      abR.position.set(0.09, 0.98 - i * 0.09, 0.28);
+      this.root.add(abL, abR);
+    }
+
     // --- Trapezius: the exaggerated "no neck" mound between the shoulders ---
     this.traps = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), shirt);
     this.traps.scale.set(1.5, 0.55, 1.1);
@@ -83,8 +96,15 @@ export class TontonJiee {
     this.smile.rotation.x = Math.PI;
     this.root.add(this.smile);
 
-    // --- Shoulders (deltoids): oversized spheres, the widest point of the body ---
-    const deltGeo = new THREE.SphereGeometry(0.24, 12, 12);
+    // --- Headband: a small comic-hero touch, and it also visually
+    // separates the (normal-sized) head from the huge traps beneath it. ---
+    const headbandMat = new THREE.MeshStandardMaterial({ color: 0xc9432f, roughness: 0.7 });
+    this.headband = new THREE.Mesh(new THREE.TorusGeometry(0.195, 0.03, 8, 16), headbandMat);
+    this.headband.rotation.x = Math.PI / 2;
+    this.headband.position.y = 1.8;
+    this.root.add(this.headband);
+
+    // --- Shoulders (deltoids): oversized spheres, the widest point of the body ---    const deltGeo = new THREE.SphereGeometry(0.24, 12, 12);
     this.deltL = new THREE.Mesh(deltGeo, shirt);
     this.deltL.position.set(-0.56, 1.46, 0);
     this.deltR = new THREE.Mesh(deltGeo, shirt);
