@@ -33,6 +33,8 @@ export const LOCALES = {
     'gameover.replay': 'Réessayer',
     'status.spotted': 'REPÉRÉ !',
     'status.hidden': 'Caché',
+    'buff.speed': 'Vitesse !',
+    'buff.shield': 'Protégé',
     'level.label': 'Niveau {n}',
     'bonus.life': '+1 ❤️'
   },
@@ -67,6 +69,8 @@ export const LOCALES = {
     'gameover.replay': 'Retry',
     'status.spotted': 'SPOTTED!',
     'status.hidden': 'Hidden',
+    'buff.speed': 'Speed!',
+    'buff.shield': 'Shielded',
     'level.label': 'Level {n}',
     'bonus.life': '+1 ❤️'
   }

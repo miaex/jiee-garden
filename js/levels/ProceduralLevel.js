@@ -82,7 +82,11 @@ export function generateProceduralLevel(levelNumber) {
     const cell = randomCell(rng, gridSize, excludedCells);
     if (cell) {
       const { x, z } = cellCenter(cell.r, cell.c);
-      positiveCharacters.push({ id: `dje-${levelNumber}`, name: 'DJÊ', x, z, effect: 'life' });
+      // Life is the most common and always available; speed/shield start
+      // showing up once there's an actual maze worth using them in.
+      const effectPool = levelNumber >= 5 ? ['life', 'life', 'speed', 'shield'] : ['life'];
+      const effect = pick(rng, effectPool);
+      positiveCharacters.push({ id: `bonus-${levelNumber}`, name: 'DJÊ', x, z, effect });
     }
   }
 

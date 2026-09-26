@@ -8,6 +8,8 @@ export class HUD {
     this._statusTimeout = null;
     this.tensionEl = document.getElementById('tension-vignette');
     this.hitFlashEl = document.getElementById('hit-flash');
+    this.buffEl = document.getElementById('buff-indicator');
+    this._buffTimeout = null;
 
     this.screens = {
       loading: document.getElementById('screen-loading'),
@@ -77,6 +79,15 @@ export class HUD {
     // Force reflow so the animation restarts even on rapid repeated hits.
     void this.hitFlashEl.offsetWidth;
     this.hitFlashEl.classList.add('flash');
+  }
+
+  showBuff(type, durationMs) {
+    const icon = type === 'speed' ? '⚡' : type === 'shield' ? '🛡️' : '✨';
+    const label = type === 'speed' ? i18n.t('buff.speed') : type === 'shield' ? i18n.t('buff.shield') : '';
+    this.buffEl.textContent = `${icon} ${label}`;
+    this.buffEl.classList.add('show');
+    clearTimeout(this._buffTimeout);
+    this._buffTimeout = setTimeout(() => this.buffEl.classList.remove('show'), durationMs);
   }
 
   showScreen(name) {

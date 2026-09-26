@@ -16,6 +16,9 @@ export class Player {
     this.speed = 0;
     this.invincibleUntil = 0;
     this.alive = true;
+    this.speedMultiplier = 1;
+    this.speedBoostUntil = 0;
+    this.shielded = false;
 
     this.root = new THREE.Group();
     this.root.position.set(startX, 0, startZ);
@@ -103,8 +106,10 @@ export class Player {
    */
   update(dt, inputVec, collisionWorld) {
     const hasInput = inputVec.x !== 0 || inputVec.z !== 0;
-    const targetVX = inputVec.x * MAX_SPEED;
-    const targetVZ = inputVec.z * MAX_SPEED;
+    if (performance.now() > this.speedBoostUntil) this.speedMultiplier = 1;
+
+    const targetVX = inputVec.x * MAX_SPEED * this.speedMultiplier;
+    const targetVZ = inputVec.z * MAX_SPEED * this.speedMultiplier;
 
     const rate = hasInput ? ACCEL : DECEL;
     this.velocity.x += (targetVX - this.velocity.x) * Math.min(1, rate * dt);
@@ -164,6 +169,18 @@ export class Player {
 
   isInvincible() {
     return performance.now() < this.invincibleUntil;
+  }
+
+  // Power-up effects (from positive characters) — kept as simple timed
+  // state on the player so Game.js doesn't need to know how each one is
+  // implemented, just that it happened.
+  applySpeedBoost(durationMs, multiplier = 1.6) {
+    this.speedMultiplier = multiplier;
+    this.speedBoostUntil = performance.now() + durationMs;
+  }
+
+  applyShield(durationMs) {
+    this.invincibleUntil = Math.max(this.invincibleUntil, performance.now() + durationMs);
   }
 
   playVictory() {

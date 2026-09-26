@@ -99,6 +99,13 @@ et `saveManager.addCandies()`, jamais le mécanisme de stockage lui-même.
 
 ## Historique des correctifs
 
+- **v5 — bonus variés**
+  - Les personnages positifs ne donnent plus seulement une vie : **vitesse
+    temporaire** (⚡, x1.6 pendant 6s) et **bouclier temporaire** (🛡️,
+    invincibilité pendant 5s) rejoignent le bonus de vie, avec une icône et
+    une couleur distinctes dès la conception 3D du personnage. Un indicateur
+    à l'écran confirme le bonus actif et son type. Les niveaux générés en
+    proposent à partir du niveau 5 ; le niveau 2 en a un exemple intégré.
 - **v4 — niveaux infinis, profil joueur, récompenses**
   - **Niveaux procéduraux infinis** (`ProceduralLevel.js`) : à partir du
     niveau 3, le jardin est généré par un vrai algorithme de labyrinthe

@@ -2,9 +2,15 @@ import * as THREE from 'three';
 
 const PICKUP_RADIUS = 0.55;
 
-// Extensible by design: today only 'life' exists, but the effect is just a
-// string key so future bonuses (speed, shield, invisibility...) plug in by
-// adding a case wherever effects are applied (see Game.js `_applyPositiveEffect`).
+const EFFECT_STYLE = {
+  life: { color: 0xe7b559, emissive: 0x7a4f12, accent: 0xd1473a },
+  speed: { color: 0x4ab0e0, emissive: 0x0f4a6b, accent: 0xdff3ff },
+  shield: { color: 0x5fd18a, emissive: 0x0f5b34, accent: 0xe8fff2 }
+};
+
+// Extensible by design: the effect is just a string key, so adding a new
+// power-up later is "add a case in Game.js `_applyPositiveEffect`" plus an
+// entry here for its look — nothing else in the codebase needs to change.
 export class PositiveCharacter {
   constructor(scene, config) {
     this.config = config;
@@ -17,9 +23,10 @@ export class PositiveCharacter {
   }
 
   _buildMesh() {
+    const style = EFFECT_STYLE[this.config.effect] || EFFECT_STYLE.life;
     const glow = new THREE.MeshStandardMaterial({
-      color: 0xe7b559,
-      emissive: 0x7a4f12,
+      color: style.color,
+      emissive: style.emissive,
       roughness: 0.5
     });
     this.body = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 12), glow);
@@ -40,13 +47,24 @@ export class PositiveCharacter {
     smile.rotation.x = Math.PI;
     this.root.add(smile);
 
-    const heart = new THREE.Mesh(
-      new THREE.SphereGeometry(0.08, 8, 8),
-      new THREE.MeshStandardMaterial({ color: 0xd1473a, emissive: 0x440000 })
-    );
-    heart.position.y = 0.82;
-    this.root.add(heart);
-    this.heart = heart;
+    // A small icon above the head so the effect is readable before you
+    // even reach it: a heart, a lightning streak, or a shield hex.
+    const accentMat = new THREE.MeshStandardMaterial({ color: style.accent, emissive: style.emissive, roughness: 0.4 });
+    if (this.config.effect === 'speed') {
+      const bolt = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 4), accentMat);
+      bolt.position.y = 0.82;
+      bolt.rotation.z = Math.PI;
+      this.root.add(bolt);
+    } else if (this.config.effect === 'shield') {
+      const shield = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.03, 6), accentMat);
+      shield.position.y = 0.82;
+      shield.rotation.x = Math.PI / 2;
+      this.root.add(shield);
+    } else {
+      const heart = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), accentMat);
+      heart.position.y = 0.82;
+      this.root.add(heart);
+    }
   }
 
   update(dt) {

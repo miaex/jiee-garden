@@ -64,6 +64,17 @@ html,body{
 }
 #status-hint.show{opacity:1; transform:translateX(-50%) translateY(4px);}
 
+/* ---------- Active buff ---------- */
+#buff-indicator{
+  position:absolute; top:64px; left:14px; z-index:10;
+  display:flex; align-items:center; gap:6px;
+  padding:6px 12px; border-radius:20px; font-size:13px; font-weight:600;
+  background:rgba(24,43,24,.6); color:var(--cream);
+  opacity:0; transform:translateY(-4px); pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+}
+#buff-indicator.show{opacity:1; transform:translateY(0);}
+
 /* ---------- Tension feedback ---------- */
 #tension-vignette{
   position:absolute; inset:0; pointer-events:none; z-index:9;

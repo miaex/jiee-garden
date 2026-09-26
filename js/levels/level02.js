@@ -93,5 +93,8 @@ export const level02 = {
     }
   ],
 
-  positiveCharacters: [{ id: 'dje-2', name: 'DJÊ', x: -1, z: -8, effect: 'life' }]
+  positiveCharacters: [
+    { id: 'dje-2', name: 'DJÊ', x: -1, z: -8, effect: 'life' },
+    { id: 'dje-2-speed', name: 'DJÊ', x: 6, z: -1, effect: 'speed' }
+  ]
 };

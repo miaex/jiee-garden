@@ -371,7 +371,7 @@ export class Game {
     positives.forEach((p) => {
       p.update(dt);
       if (p.tryCollect(player.position)) {
-        this._applyPositiveEffect(p.config.effect);
+        this._applyPositiveEffect(p.config.effect, player);
       }
     });
 
@@ -392,7 +392,7 @@ export class Game {
     }
   }
 
-  _applyPositiveEffect(effect) {
+  _applyPositiveEffect(effect, player) {
     switch (effect) {
       case 'life':
         if (this.lives < this.maxLives) {
@@ -400,6 +400,16 @@ export class Game {
           this.hud.renderLives(this.lives, this.maxLives);
           this.hud.pulseLastHeart(this.lives - 1);
         }
+        audioManager.playLifeUp();
+        break;
+      case 'speed':
+        player.applySpeedBoost(6000, 1.6);
+        this.hud.showBuff('speed', 6000);
+        audioManager.playLifeUp();
+        break;
+      case 'shield':
+        player.applyShield(5000);
+        this.hud.showBuff('shield', 5000);
         audioManager.playLifeUp();
         break;
       default:
