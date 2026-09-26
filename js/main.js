@@ -9,6 +9,9 @@ async function boot() {
     const game = new Game();
     tempHud.setLoadingProgress(0.7, 'Plantation du jardin…');
     game.start();
+    // Debug hook only — lets in-field diagnostics (or a future dev console)
+    // poke at game state without changing any gameplay behavior.
+    window.__game = game;
   } catch (err) {
     console.error('Fatal error while starting the game:', err);
     tempHud.setLoadingProgress(1, "Une erreur est survenue. Recharge la page.");

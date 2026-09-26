@@ -11,6 +11,7 @@ export class HUD {
 
     this.screens = {
       loading: document.getElementById('screen-loading'),
+      onboarding: document.getElementById('screen-onboarding'),
       pause: document.getElementById('screen-pause'),
       victory: document.getElementById('screen-victory'),
       gameover: document.getElementById('screen-gameover'),
@@ -19,6 +20,10 @@ export class HUD {
 
     this.loadingBar = document.getElementById('loading-bar');
     this.loadingText = document.getElementById('loading-text');
+    this.menuGreetingEl = document.getElementById('menu-greeting');
+    this.menuStatsEl = document.getElementById('menu-stats');
+    this.victoryCandiesEl = document.getElementById('victory-candies');
+    this.victoryMessageEl = document.getElementById('victory-message');
   }
 
   setLoadingProgress(fraction, text) {
@@ -83,5 +88,29 @@ export class HUD {
 
   hideAllScreens() {
     Object.values(this.screens).forEach((el) => el.classList.add('hidden'));
+  }
+
+  setMenuGreeting(name) {
+    if (name && name.trim()) {
+      this.menuGreetingEl.textContent = i18n.t('menu.greeting', { name: name.trim() });
+      this.menuGreetingEl.style.display = '';
+    } else {
+      this.menuGreetingEl.style.display = 'none';
+    }
+  }
+
+  setMenuStats(levelReached, candyCount) {
+    this.menuStatsEl.innerHTML = '';
+    const levelSpan = document.createElement('span');
+    levelSpan.textContent = i18n.t('menu.level', { n: levelReached });
+    const candySpan = document.createElement('span');
+    candySpan.textContent = '🍬 ' + i18n.t('menu.candies', { count: candyCount });
+    this.menuStatsEl.appendChild(levelSpan);
+    this.menuStatsEl.appendChild(candySpan);
+  }
+
+  setVictoryReward(candyRow, message) {
+    this.victoryCandiesEl.textContent = candyRow;
+    this.victoryMessageEl.textContent = message;
   }
 }

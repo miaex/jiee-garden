@@ -12,7 +12,7 @@ export const level02 = {
 
   playerStart: { x: -8, z: -8, facing: 0 },
 
-  tontonJiee: { x: 8, z: 8 },
+  tontonJiee: { x: -8, z: 8 },
 
   hedges: [
     { x: -6, z: -7, width: 8, depth: 0.7 },

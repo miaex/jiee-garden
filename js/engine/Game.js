@@ -14,6 +14,7 @@ import { LevelLoader } from '../levels/LevelLoader.js';
 import { HUD } from '../ui/HUD.js';
 import { saveManager } from '../save/SaveManager.js';
 import { i18n } from '../i18n/i18n.js';
+import { pickRewardMessage, candyEmojiRow } from '../i18n/rewardMessages.js';
 
 const GameState = {
   LOADING: 'LOADING',
@@ -35,6 +36,7 @@ export class Game {
     this._clock = new THREE.Clock();
     this._entities = { enemies: [], positives: [], tonton: null, player: null };
     this._heartbeatTimer = 0;
+    this._everDetected = false;
 
     this._initRenderer();
     this._initScene();
@@ -144,18 +146,71 @@ export class Game {
 
     document.getElementById('play-btn').addEventListener('click', () => {
       const startLevel = saveManager.data.highestLevelReached || 1;
-      this.startLevel(Math.min(startLevel, LevelLoader.maxLevelId()));
+      this.startLevel(startLevel);
     });
+    document.getElementById('edit-profile-btn').addEventListener('click', () => this._showOnboarding(true));
 
     document.getElementById('next-level-btn').addEventListener('click', () => {
-      this.startLevel(Math.min(this.currentLevelId + 1, LevelLoader.maxLevelId()));
+      this.startLevel(this.currentLevelId + 1);
     });
     document.getElementById('victory-restart-btn').addEventListener('click', () => this.restartLevel());
     document.getElementById('gameover-restart-btn').addEventListener('click', () => this.restartLevel());
 
+    this._bindOnboarding();
+
     i18n.setLang(saveManager.getSettings().lang || 'fr');
     audioManager.setEnabled(saveManager.getSettings().soundOn !== false);
     this._refreshSoundButtonLabel();
+  }
+
+  _bindOnboarding() {
+    const genderRow = document.getElementById('gender-choices');
+    const langRow = document.getElementById('lang-choices');
+
+    genderRow.querySelectorAll('.choice-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        genderRow.querySelectorAll('.choice-btn').forEach((b) => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        this._pendingGender = btn.dataset.gender;
+      });
+    });
+
+    langRow.querySelectorAll('.choice-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        langRow.querySelectorAll('.choice-btn').forEach((b) => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        i18n.setLang(btn.dataset.lang); // instant preview of the chosen language
+      });
+    });
+
+    document.getElementById('onboarding-start-btn').addEventListener('click', () => {
+      const name = document.getElementById('onboarding-name').value.trim();
+      const gender = this._pendingGender || 'x';
+      const lang = i18n.lang;
+      saveManager.saveProfile({ name, gender, lang });
+      this.goToMenu();
+    });
+  }
+
+  // `isEdit` pre-fills the form with the existing profile instead of a
+  // blank one, used by the "edit profile" button on the home screen.
+  _showOnboarding(isEdit) {
+    const profile = saveManager.getProfile();
+    document.getElementById('onboarding-name').value = isEdit ? profile.name : '';
+
+    const genderRow = document.getElementById('gender-choices');
+    genderRow.querySelectorAll('.choice-btn').forEach((b) => {
+      b.classList.toggle('selected', isEdit && b.dataset.gender === profile.gender);
+    });
+    this._pendingGender = isEdit ? profile.gender : null;
+
+    const langRow = document.getElementById('lang-choices');
+    const currentLang = isEdit ? profile.lang : i18n.lang;
+    langRow.querySelectorAll('.choice-btn').forEach((b) => {
+      b.classList.toggle('selected', b.dataset.lang === currentLang);
+    });
+
+    this.hud.showScreen('onboarding');
   }
 
   _toggleSound() {
@@ -174,6 +229,10 @@ export class Game {
 
   goToMenu() {
     this.state = GameState.MENU;
+    const profile = saveManager.getProfile();
+    this.hud.setMenuGreeting(profile.name);
+    this.hud.setMenuStats(saveManager.data.highestLevelReached, saveManager.getTotalCandies());
+    document.getElementById('edit-profile-btn').style.display = saveManager.getExternalProfile() ? 'none' : '';
     this.hud.showScreen('menu');
   }
 
@@ -185,6 +244,7 @@ export class Game {
     this.level = level;
     this.maxLives = level.lives;
     this.lives = level.lives;
+    this._everDetected = false;
 
     const { hedgeGroup, decoGroup, atmosphere } = buildGarden(this.scene, level, this.collisionWorld);
     this.cameraController.setOccluders([hedgeGroup, decoGroup]);
@@ -242,7 +302,11 @@ export class Game {
   start() {
     this.hud.setLoadingProgress(1, 'Prêt');
     setTimeout(() => {
-      this.goToMenu();
+      if (saveManager.hasProfile()) {
+        this.goToMenu();
+      } else {
+        this._showOnboarding(false);
+      }
       this._loop();
     }, 250);
   }
@@ -298,6 +362,7 @@ export class Game {
     }
 
     if (anyAlertOrChase) {
+      this._everDetected = true;
       this.hud.showStatus('status.spotted', 0);
     } else {
       this.hud.hideStatus();
@@ -362,10 +427,26 @@ export class Game {
     audioManager.playVictory();
     saveManager.markLevelComplete(this.currentLevelId);
 
-    const isLast = this.currentLevelId >= LevelLoader.maxLevelId();
-    document.getElementById('next-level-btn').style.display = isLast ? 'none' : 'block';
+    const reward = this._computeReward();
+    saveManager.addCandies(reward.count);
+    this.hud.setVictoryReward(reward.candyRow, reward.message);
 
     setTimeout(() => this.hud.showScreen('victory'), 500);
+  }
+
+  // Tonton Jiee "decides" the candy count from how the run actually went:
+  // more lives left at the end, plus a real bonus for never being spotted
+  // at all — so playing carefully is rewarded, not just finishing.
+  _computeReward() {
+    const livesFraction = this.lives / this.maxLives;
+    let count = 2 + Math.round(livesFraction * 3);
+    if (!this._everDetected) count += 2;
+    if (Math.random() < 0.3) count += 1;
+    count = Math.max(1, Math.min(10, count));
+
+    const profile = saveManager.getProfile();
+    const message = pickRewardMessage(i18n.lang, profile.gender, profile.name, count);
+    return { count, candyRow: candyEmojiRow(count), message };
   }
 
   _onGameOver() {

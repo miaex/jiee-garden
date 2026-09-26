@@ -23,6 +23,9 @@ class I18n {
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       el.textContent = this.t(el.getAttribute('data-i18n'));
     });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+      el.placeholder = this.t(el.getAttribute('data-i18n-placeholder'));
+    });
   }
 }
 

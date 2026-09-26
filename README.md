@@ -61,18 +61,72 @@ js/
     Collision.js          monde de collision (AABB), résolution de cercle, ligne de vue
     GardenBuilder.js       construit les haies/décors 3D à partir d'un niveau
   levels/
-    level01.js, level02.js  données des niveaux (déterministes)
-    LevelLoader.js          registre des niveaux
-  ui/HUD.js               vies, écrans (pause/victoire/défaite/menu), indicateur "repéré"
-  save/SaveManager.js     progression + réglages en localStorage (prêt pour sync JIEE PLAY)
+    level01.js, level02.js  niveaux tutoriels écrits à la main
+    ProceduralLevel.js      génération infinie de labyrinthes (seed = niveau)
+    rng.js                  PRNG déterministe (mulberry32)
+    LevelLoader.js          registre : niveaux 1-2 en dur, 3+ générés à la volée
+  ui/HUD.js               vies, écrans (accueil/onboarding/pause/victoire/défaite), tension
+  save/SaveManager.js     progression, profil joueur, économie de bonbons (localStorage)
   i18n/                   fr/en, aucun texte en dur dans les composants
+  i18n/rewardMessages.js  messages de Tonton Jiee (variés, genrés, bilingues)
 ```
 
-Ajouter un niveau = créer `levelXX.js` sur le modèle de `level01.js` et
-l'enregistrer dans `LevelLoader.js`. Rien d'autre à modifier.
+Ajouter un niveau tutoriel = créer `levelXX.js` sur le modèle de `level01.js`
+et l'enregistrer dans `LevelLoader.js`. Au-delà de 2, tout est généré
+automatiquement par `ProceduralLevel.js`, rien à ajouter à la main.
+
+## Intégration future à JIEE PLAY — comment ça se branche
+
+Le jeu tourne aujourd'hui en autonome avec un profil local (prénom/genre/
+langue demandés une fois à l'accueil) et une progression en `localStorage`.
+Pour brancher les vraies données JIEE PLAY plus tard, un seul point d'entrée
+existe et rien d'autre n'a besoin de changer :
+
+```js
+// Dans l'app hôte JIEE PLAY, avant de charger le jeu :
+window.JIEE_PLAY_PROFILE = { name: "Amina", gender: "f", lang: "fr" };
+```
+
+Dès que `window.JIEE_PLAY_PROFILE` existe, `SaveManager.getExternalProfile()`
+le détecte automatiquement : l'écran d'accueil du jeu saute directement au
+menu (plus d'onboarding local), le bouton "Modifier mon profil" disparaît
+(puisque ça se gère côté JIEE PLAY), et tous les messages de Tonton Jiee
+utilisent ce profil. La progression (niveau atteint, bonbons) reste pour
+l'instant en `localStorage` propre au jeu ; le jour où JIEE PLAY expose un
+vrai stockage de profil partagé, seul `SaveManager.js` aura besoin d'un
+nouveau backend — le reste du jeu ne connaît que `saveManager.getProfile()`
+et `saveManager.addCandies()`, jamais le mécanisme de stockage lui-même.
 
 ## Historique des correctifs
 
+- **v4 — niveaux infinis, profil joueur, récompenses**
+  - **Niveaux procéduraux infinis** (`ProceduralLevel.js`) : à partir du
+    niveau 3, le jardin est généré par un vrai algorithme de labyrinthe
+    (parcours en profondeur + un peu de "tressage" pour créer des boucles
+    et des cachettes), graine = numéro du niveau — donc rejouer le niveau
+    17 donne toujours exactement le même jardin, mais il n'y a plus de
+    limite au nombre de niveaux.
+  - **Tonton Jiee n'est plus fixe** : sa position est calculée par recherche
+    en largeur (BFS) comme la case la plus éloignée du départ dans le
+    labyrinthe — donc jamais au même endroit, et toujours une vraie
+    traversée à faire.
+  - **Binômes de gardes** : à partir du niveau 4, certains gardes patrouillent
+    en duo sur la même boucle, décalés de moitié — ils se croisent et
+    couvrent un couloir des deux côtés à la fois.
+  - **Difficulté progressive infinie** : nombre de gardes, vitesse, champ de
+    vision et densité du labyrinthe augmentent avec le niveau (plafonnés
+    pour rester jouable et fluide sur mobile).
+  - **Profil joueur** (prénom, genre, langue) demandé une seule fois à
+    l'accueil, réutilisé pour personnaliser les messages de Tonton Jiee.
+    Conçu pour être remplacé sans rien changer d'autre une fois intégré à
+    JIEE PLAY (voir `SaveManager.getExternalProfile()`).
+  - **Vraie page d'accueil** : salue le joueur par son prénom, affiche le
+    niveau atteint et le total de bonbons récoltés.
+  - **Récompense de fin de niveau** : Tonton Jiee offre 2 à 5+ bonbons selon
+    les vies restantes, +2 si le joueur n'a jamais été repéré, affichés en
+    émojis avec un message personnalisé tiré aléatoirement parmi plusieurs
+    variantes, genrées et bilingues (fr/en). Le total est cumulé et visible
+    sur l'écran d'accueil.
 - **v3.1 — correctif critique**
   - **Bug bloquant "Jouer"** : une fusion accidentelle de deux lignes dans
     `TontonJiee.js` (un commentaire et le code juste en dessous) avait
@@ -117,16 +171,24 @@ l'enregistrer dans `LevelLoader.js`. Rien d'autre à modifier.
 - Déplacement libre 360° avec accélération/décélération, joystick tactile fluide.
 - Caméra aérienne inclinée (pas plate), zoom pincement + boutons, distance
   bornée, et occlusion (ne traverse plus les haies/décors).
-- Deux niveaux jouables avec une vraie progression de difficulté (plus de
-  gardes, labyrinthe plus dense, champ de vision plus large au niveau 2).
-- Trois gardes maximum : patrouille sur trajectoire fixe, cône de vision +
-  ligne de vue bloquée par les haies, poursuite avec pathfinding réel
-  (contournement des haies via A* sur grille, pas seulement en ligne droite),
-  recherche brève puis retour en patrouille.
+- **Niveaux infinis** : 1-2 tutoriels faits main, 3+ générés (labyrinthe,
+  position de Tonton Jiee, gardes, bonus) avec une vraie graine déterministe
+  par niveau, et une difficulté qui augmente en continu.
+- **Binômes de gardes** à partir du niveau 4, en plus des patrouilles solos.
+- Cône de vision + ligne de vue bloquée par les haies, poursuite avec
+  pathfinding réel (A* sur grille, contournement des haies), recherche brève
+  puis retour en patrouille.
 - Système de vies (5), contact avec un garde toujours dangereux (patrouille
-  ou poursuite), invincibilité courte après un coup, feedback visuel/sonore.
+  ou poursuite), invincibilité courte après un coup, feedback visuel/sonore,
+  tension (vignette + battement de cœur) qui monte avant même d'être repéré.
 - Personnage bonus DJÊ (+1 vie), objectif Tonton Jiee (silhouette humaine à
-  la musculature du haut du corps exagérée) avec zone de sécurité.
+  la musculature du haut du corps exagérée) toujours placé au point le plus
+  éloigné du départ.
+- **Récompense de fin de niveau** : bonbons calculés sur la performance +
+  message de Tonton Jiee personnalisé (prénom, genre, langue), variété de
+  formulations, total cumulé visible à l'accueil.
+- **Profil joueur + page d'accueil** : prénom/genre/langue demandés une fois,
+  écran d'accueil avec salutation, niveau atteint, bonbons récoltés.
 - Pause, écran de victoire/défaite, niveaux rejouables à l'identique (déterministe).
 - PWA installable (manifest + service worker + icônes).
 - Architecture multilingue (fr/en) et sauvegarde locale de la progression.
@@ -138,6 +200,11 @@ l'enregistrer dans `LevelLoader.js`. Rien d'autre à modifier.
 Conformément à la consigne de ne rien supprimer silencieusement, voici ce qui
 a été simplifié et pourquoi, avec la piste d'amélioration :
 
+- **Décors des niveaux procéduraux** : non solides (purement visuels), pour
+  garantir qu'un jardin généré automatiquement reste toujours traversable —
+  contrairement aux niveaux 1-2 où quelques éléments (statue, pots, fontaine)
+  bloquent le passage et servent de cachette. À terme, un décor solide
+  pourrait être placé uniquement dans les culs-de-sac du labyrinthe généré.
 - **Déplacement des gardes en poursuite** : navigation par grille (A*, cellules
   de 0.4m) plutôt qu'un vrai navmesh — largement suffisant pour ce type de
   labyrinthe et bon marché à recalculer sur mobile, mais moins précis qu'un

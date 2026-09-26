@@ -1,23 +1,32 @@
 import { level01 } from './level01.js';
 import { level02 } from './level02.js';
+import { generateProceduralLevel } from './ProceduralLevel.js';
 
-// New levels are registered here by id. The engine/game code never needs
-// to change when a level is added — only this table grows.
-const LEVELS = {
+// Levels 1-2 are hand-authored tutorials. Level 3 onward is generated
+// procedurally (deterministically, from the level number) — there is no
+// upper bound, which is what gives the "infinite levels" feel. Generated
+// levels are cached per session so re-entering one (e.g. via pause →
+// restart) doesn't redo the maze carve, though regenerating would give
+// the exact same result anyway since it's seeded by the level number.
+const CURATED_LEVELS = {
   1: level01,
   2: level02
 };
 
+const generatedCache = new Map();
+
 export const LevelLoader = {
   get(id) {
-    const level = LEVELS[id];
-    if (!level) {
-      console.warn(`Level ${id} not found, falling back to level 1.`);
-      return LEVELS[1];
+    if (CURATED_LEVELS[id]) return CURATED_LEVELS[id];
+
+    if (!generatedCache.has(id)) {
+      generatedCache.set(id, generateProceduralLevel(id));
     }
-    return level;
+    return generatedCache.get(id);
   },
+  // Kept for compatibility; levels are effectively infinite now so nothing
+  // should clamp against this except as a sanity ceiling.
   maxLevelId() {
-    return Math.max(...Object.keys(LEVELS).map(Number));
+    return Infinity;
   }
 };

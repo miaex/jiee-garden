@@ -29,10 +29,10 @@ export class PatrolAI {
   constructor(config) {
     this.config = config;
     this.patrol = config.patrol;
-    this.patrolIndex = 0;
+    this.patrolIndex = config.startPatrolIndex || 0;
     this.state = GuardState.PATROL;
-    this.x = config.patrol[0].x;
-    this.z = config.patrol[0].z;
+    this.x = config.patrol[this.patrolIndex].x;
+    this.z = config.patrol[this.patrolIndex].z;
     this.facing = 0;
     this.waitTimer = 0;
     this.stateTimer = 0;
