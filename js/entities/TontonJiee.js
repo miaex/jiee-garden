@@ -104,7 +104,8 @@ export class TontonJiee {
     this.headband.position.y = 1.8;
     this.root.add(this.headband);
 
-    // --- Shoulders (deltoids): oversized spheres, the widest point of the body ---    const deltGeo = new THREE.SphereGeometry(0.24, 12, 12);
+    // --- Shoulders (deltoids): oversized spheres, the widest point of the body ---
+    const deltGeo = new THREE.SphereGeometry(0.24, 12, 12);
     this.deltL = new THREE.Mesh(deltGeo, shirt);
     this.deltL.position.set(-0.56, 1.46, 0);
     this.deltR = new THREE.Mesh(deltGeo, shirt);

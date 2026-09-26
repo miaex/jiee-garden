@@ -73,6 +73,13 @@ l'enregistrer dans `LevelLoader.js`. Rien d'autre à modifier.
 
 ## Historique des correctifs
 
+- **v3.1 — correctif critique**
+  - **Bug bloquant "Jouer"** : une fusion accidentelle de deux lignes dans
+    `TontonJiee.js` (un commentaire et le code juste en dessous) avait
+    transformé une ligne de code en commentaire, provoquant une erreur
+    `deltGeo is not defined` dès qu'on appuyait sur "Jouer" — le jeu restait
+    bloqué sur le menu sans aucun message visible. Corrigé et revérifié en
+    conditions réelles (chargement, pause, redémarrage, retour au menu).
 - **v3 — sensation de jeu, réalisme visuel, personnages**
   - **Contrôles** : zone morte sur le joystick (fini le tremblement au repos),
     accélération/rotation plus nerveuses, bruit de pas.
