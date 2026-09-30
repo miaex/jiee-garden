@@ -37,6 +37,8 @@ export class Game {
     this._entities = { enemies: [], positives: [], tonton: null, player: null };
     this._heartbeatTimer = 0;
     this._everDetected = false;
+    this._fpsFrames = 0;
+    this._fpsTimer = 0;
 
     this._initRenderer();
     this._initScene();
@@ -300,6 +302,7 @@ export class Game {
   }
 
   start() {
+    this.hud.setFPSVisible(true); // shown by default during this playtesting phase
     this.hud.setLoadingProgress(1, 'Prêt');
     setTimeout(() => {
       if (saveManager.hasProfile()) {
@@ -316,6 +319,17 @@ export class Game {
     const dt = Math.min(this._clock.getDelta(), 0.05);
     if (this.state === GameState.PLAYING) this._update(dt);
     this.renderer.render(this.scene, this.camera);
+
+    // Real-device playtesting aid: a rolling FPS readout, updated twice a
+    // second so it's readable rather than flickering every frame.
+    this._fpsFrames++;
+    this._fpsTimer += dt;
+    if (this._fpsTimer >= 0.5) {
+      const fps = Math.round(this._fpsFrames / this._fpsTimer);
+      this.hud.updateFPS(fps, this.renderer.info?.render?.calls);
+      this._fpsFrames = 0;
+      this._fpsTimer = 0;
+    }
   }
 
   _update(dt) {

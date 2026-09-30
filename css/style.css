@@ -75,6 +75,16 @@ html,body{
 }
 #buff-indicator.show{opacity:1; transform:translateY(0);}
 
+/* ---------- Debug FPS counter ---------- */
+#fps-counter{
+  position:absolute; top:max(12px, env(safe-area-inset-top)); right:60px; z-index:20;
+  font-size:11px; font-family:monospace; padding:4px 8px; border-radius:8px;
+  background:rgba(0,0,0,.5); color:#9fe89f; pointer-events:none; display:none;
+}
+#fps-counter.visible{display:block;}
+#fps-counter.warn{color:#f0c96a;}
+#fps-counter.bad{color:#f0806a;}
+
 /* ---------- Tension feedback ---------- */
 #tension-vignette{
   position:absolute; inset:0; pointer-events:none; z-index:9;

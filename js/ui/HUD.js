@@ -10,6 +10,7 @@ export class HUD {
     this.hitFlashEl = document.getElementById('hit-flash');
     this.buffEl = document.getElementById('buff-indicator');
     this._buffTimeout = null;
+    this.fpsEl = document.getElementById('fps-counter');
 
     this.screens = {
       loading: document.getElementById('screen-loading'),
@@ -79,6 +80,18 @@ export class HUD {
     // Force reflow so the animation restarts even on rapid repeated hits.
     void this.hitFlashEl.offsetWidth;
     this.hitFlashEl.classList.add('flash');
+  }
+
+  // Debug-only perf readout, meant for real-device playtesting — not part
+  // of the normal player-facing HUD. Call setFPSVisible(true) to show it.
+  setFPSVisible(visible) {
+    this.fpsEl.classList.toggle('visible', visible);
+  }
+
+  updateFPS(fps, drawCalls) {
+    this.fpsEl.textContent = drawCalls != null ? `${fps} fps · ${drawCalls} draws` : `${fps} fps`;
+    this.fpsEl.classList.toggle('warn', fps < 50 && fps >= 30);
+    this.fpsEl.classList.toggle('bad', fps < 30);
   }
 
   showBuff(type, durationMs) {
