@@ -16,6 +16,9 @@ import { saveManager } from '../save/SaveManager.js';
 import { i18n } from '../i18n/i18n.js';
 import { pickRewardMessage, candyEmojiRow } from '../i18n/rewardMessages.js';
 
+const SUMMON_SWEEP_RADIUS = 1.3;
+const SUMMON_MAX_DISTANCE = 7; // how far one summon closes the gap, not an instant win
+
 const GameState = {
   LOADING: 'LOADING',
   MENU: 'MENU',
@@ -39,6 +42,8 @@ export class Game {
     this._everDetected = false;
     this._fpsFrames = 0;
     this._fpsTimer = 0;
+    this._summonAvailable = false;
+    this._summonCooldownUntil = 0;
 
     this._initRenderer();
     this._initScene();
@@ -132,11 +137,83 @@ export class Game {
       zoneEl: document.getElementById('joystick-zone'),
       baseEl: document.getElementById('joystick-base'),
       knobEl: document.getElementById('joystick-knob'),
-      onZoomDelta: (delta) => this.cameraController.addZoom(delta)
+      onZoomDelta: (delta) => this.cameraController.addZoom(delta),
+      onPanDelta: (dx, dy) => this.cameraController.pan(dx, dy)
     });
 
     document.getElementById('zoom-in').addEventListener('click', () => this.cameraController.setZoomButtonsStep(-1));
     document.getElementById('zoom-out').addEventListener('click', () => this.cameraController.setZoomButtonsStep(1));
+
+    this._dashBtn = document.getElementById('dash-btn');
+    this._dashRingCircle = document.querySelector('#dash-cooldown-ring circle');
+    this._dashBtn.addEventListener('click', () => this._tryDash());
+
+    this._summonBtn = document.getElementById('summon-btn');
+    this._summonBtn.addEventListener('click', () => this._callTontonJiee());
+  }
+
+  _tryDash() {
+    const player = this._entities.player;
+    if (!player || this.state !== GameState.PLAYING) return;
+    if (player.tryDash()) audioManager.playDash();
+  }
+
+  _updateDashUI() {
+    const player = this._entities.player;
+    if (!player || !this._dashRingCircle) return;
+    const frac = player.dashCooldownFraction(); // 1 = just used, 0 = ready
+    this._dashRingCircle.style.strokeDashoffset = String(frac * 100);
+    this._dashBtn.classList.toggle('cooling', frac > 0);
+  }
+
+  // Random "lifeline" opportunity: occasionally offers the player the
+  // choice to call Tonton Jiee in a bit closer, sweeping any guard he
+  // passes out of the way as he comes. Also drives the sweep itself while
+  // he's actually en route.
+  _updateSummon(dt, enemies) {
+    const tonton = this._entities.tonton;
+    if (!tonton) return;
+
+    if (!this._summonAvailable && !tonton.isSummoning && performance.now() > this._summonCooldownUntil) {
+      this._summonAvailable = true;
+      this._summonBtn.textContent = i18n.t('summon.button');
+      this._summonBtn.classList.remove('hidden');
+      audioManager.playSummonReady();
+      if (navigator.vibrate) navigator.vibrate(60);
+    }
+
+    if (tonton.isSummoning) {
+      enemies.forEach((enemy) => {
+        if (enemy.defeated) return;
+        const dist = Math.hypot(tonton.x - enemy.position.x, tonton.z - enemy.position.z);
+        if (dist < SUMMON_SWEEP_RADIUS) {
+          const dx = (enemy.position.x - tonton.x) / (dist || 1);
+          const dz = (enemy.position.z - tonton.z) / (dist || 1);
+          const landing = findKnockbackLanding(this.collisionWorld, enemy.position.x, enemy.position.z, dx, dz, 5);
+          enemy.knockBack(landing.x, landing.z);
+          audioManager.playSweep();
+          if (navigator.vibrate) navigator.vibrate(40);
+        }
+      });
+    }
+  }
+
+  _callTontonJiee() {
+    if (!this._summonAvailable || this.state !== GameState.PLAYING) return;
+    const tonton = this._entities.tonton;
+    const player = this._entities.player;
+    if (!tonton || !player || !this.navGrid) return;
+
+    const fullPath = this.navGrid.findPath(tonton.x, tonton.z, player.position.x, player.position.z);
+    const path = fullPath ? truncatePathByDistance(tonton.x, tonton.z, fullPath, SUMMON_MAX_DISTANCE) : [];
+
+    if (path.length === 0) return; // already adjacent, or no path found — nothing to do
+
+    tonton.startSummon(path);
+    this._summonAvailable = false;
+    this._summonBtn.classList.add('hidden');
+    this._summonCooldownUntil = performance.now() + randomBetween(22000, 40000);
+    audioManager.playVictory(); // reuse the triumphant chime — this is a "help has arrived" moment too
   }
 
   _bindUI() {
@@ -247,6 +324,9 @@ export class Game {
     this.maxLives = level.lives;
     this.lives = level.lives;
     this._everDetected = false;
+    this._summonAvailable = false;
+    this._summonCooldownUntil = performance.now() + randomBetween(14000, 26000);
+    this._summonBtn.classList.add('hidden');
 
     const { hedgeGroup, decoGroup, atmosphere } = buildGarden(this.scene, level, this.collisionWorld);
     this.cameraController.setOccluders([hedgeGroup, decoGroup]);
@@ -338,7 +418,9 @@ export class Game {
 
     const moveVec = this.input.getMoveVector();
     player.update(dt, moveVec, this.collisionWorld);
-    this.cameraController.follow(player.position, dt);
+    const isMoving = moveVec.x !== 0 || moveVec.z !== 0;
+    this.cameraController.follow(player.position, dt, isMoving);
+    this._updateDashUI();
 
     let anyAlertOrChase = false;
     let anyTouching = false;
@@ -346,6 +428,7 @@ export class Game {
 
     enemies.forEach((enemy) => {
       const state = enemy.update(dt, { x: player.position.x, z: player.position.z }, this.collisionWorld);
+      if (enemy.defeated) return; // swept aside by Tonton Jiee — no longer a threat
       if (state === GuardState.ALERT || state === GuardState.CHASE) anyAlertOrChase = true;
 
       // A guard hurts the player on physical contact regardless of its
@@ -390,6 +473,7 @@ export class Game {
     });
 
     tonton.update(dt);
+    this._updateSummon(dt, enemies);
 
     if (this._atmosphere) {
       this._atmosphere.rotation.y += dt * 0.02;
@@ -478,4 +562,51 @@ export class Game {
     audioManager.playGameOver();
     setTimeout(() => this.hud.showScreen('gameover'), 400);
   }
+}
+
+// Marches outward from (x,z) along a direction in small steps until the
+// collision world says the next step wouldn't be walkable, and returns
+// the last walkable point — i.e. "where something flying in this
+// direction would land, just before it hits whatever is in the way".
+function findKnockbackLanding(collisionWorld, x, z, dirX, dirZ, maxDist) {
+  const stepSize = 0.15;
+  let last = { x, z };
+  for (let d = stepSize; d <= maxDist; d += stepSize) {
+    const px = x + dirX * d;
+    const pz = z + dirZ * d;
+    if (!collisionWorld.isWalkable(px, pz, 0.25)) return last;
+    last = { x: px, z: pz };
+  }
+  return last;
+}
+
+// Keeps only as much of `path` as fits within `maxDist` world units from
+// (startX, startZ), cutting the final segment short partway if needed —
+// this is what makes one summon close the gap "a bit", not all the way.
+function truncatePathByDistance(startX, startZ, path, maxDist) {
+  const result = [];
+  let cx = startX;
+  let cz = startZ;
+  let remaining = maxDist;
+
+  for (const wp of path) {
+    const d = Math.hypot(wp.x - cx, wp.z - cz);
+    if (d <= remaining) {
+      result.push(wp);
+      remaining -= d;
+      cx = wp.x;
+      cz = wp.z;
+    } else {
+      const t = d > 0 ? remaining / d : 0;
+      result.push({ x: cx + (wp.x - cx) * t, z: cz + (wp.z - cz) * t });
+      remaining = 0;
+      break;
+    }
+    if (remaining <= 0) break;
+  }
+  return result;
+}
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
 }

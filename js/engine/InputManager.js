@@ -3,11 +3,12 @@
 // included so the game is testable on desktop during development.
 
 export class InputManager {
-  constructor({ zoneEl, baseEl, knobEl, onZoomDelta }) {
+  constructor({ zoneEl, baseEl, knobEl, onZoomDelta, onPanDelta }) {
     this.zoneEl = zoneEl;
     this.baseEl = baseEl;
     this.knobEl = knobEl;
     this.onZoomDelta = onZoomDelta || (() => {});
+    this.onPanDelta = onPanDelta || (() => {});
 
     this.moveVector = { x: 0, z: 0 };
     this._joystickTouchId = null;
@@ -18,7 +19,73 @@ export class InputManager {
 
     this._bindJoystick();
     this._bindPinchZoom();
+    this._bindPan();
     this._bindKeyboard(); // handy for desktop testing
+  }
+
+  // A one-finger drag on the garden (outside the joystick zone, and not
+  // part of a pinch) scouts the level: it pans the camera's look target
+  // instead of moving the character. Game.js recenters it automatically
+  // once the player actually steers with the joystick.
+  _bindPan() {
+    const canvas = document.getElementById('game-canvas');
+    let panTouchId = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    canvas.addEventListener(
+      'touchstart',
+      (e) => {
+        if (e.touches.length === 1) {
+          const t = e.touches[0];
+          panTouchId = t.identifier;
+          lastX = t.clientX;
+          lastY = t.clientY;
+        } else {
+          panTouchId = null; // a second finger arrived — hand off to pinch-zoom
+        }
+      },
+      { passive: true }
+    );
+
+    canvas.addEventListener(
+      'touchmove',
+      (e) => {
+        if (e.touches.length !== 1 || panTouchId === null) return;
+        const t = e.touches[0];
+        if (t.identifier !== panTouchId) return;
+        const dx = t.clientX - lastX;
+        const dy = t.clientY - lastY;
+        lastX = t.clientX;
+        lastY = t.clientY;
+        this.onPanDelta(dx, dy);
+      },
+      { passive: true }
+    );
+
+    const end = (e) => {
+      if (e.touches && e.touches.length > 0) return;
+      panTouchId = null;
+    };
+    canvas.addEventListener('touchend', end);
+    canvas.addEventListener('touchcancel', end);
+
+    // Desktop drag fallback for testing.
+    let dragging = false;
+    canvas.addEventListener('mousedown', (e) => {
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      this.onPanDelta(e.clientX - lastX, e.clientY - lastY);
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+    window.addEventListener('mouseup', () => {
+      dragging = false;
+    });
   }
 
   _bindJoystick() {

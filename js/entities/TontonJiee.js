@@ -17,6 +17,24 @@ export class TontonJiee {
     this._buildMesh();
     scene.add(this.root);
     this._t = 0;
+
+    // "Summon" movement state — normally idle at his fixed spot, but can
+    // be sent partway toward the player along a precomputed path.
+    this.isSummoning = false;
+    this._summonPath = [];
+    this._summonPathIndex = 0;
+    this._summonSpeed = 4.2;
+  }
+
+  // `path` is a list of {x,z} waypoints (typically from NavGrid.findPath),
+  // already guaranteed walkable — Game.js computes it, this class just
+  // walks it. Returns false if there's nowhere to go.
+  startSummon(path) {
+    if (!path || path.length === 0) return false;
+    this._summonPath = path;
+    this._summonPathIndex = 0;
+    this.isSummoning = true;
+    return true;
   }
 
   _buildMesh() {
@@ -157,12 +175,36 @@ export class TontonJiee {
   }
 
   update(dt) {
+    if (this.isSummoning) this._stepSummon(dt);
+
     this._t += dt;
     // Idle flex — small welcoming "breathing" bounce, arms stay in the flex pose.
     const bump = Math.sin(this._t * 1.6) * 0.015;
     this.armL.scale.setScalar(1 + bump);
     this.armR.scale.setScalar(1 + bump);
     this.head.position.y = 1.78 + Math.sin(this._t * 1.2) * 0.008;
+  }
+
+  _stepSummon(dt) {
+    const target = this._summonPath[this._summonPathIndex];
+    const dx = target.x - this.x;
+    const dz = target.z - this.z;
+    const dist = Math.hypot(dx, dz);
+
+    if (dist < 0.2) {
+      this._summonPathIndex += 1;
+      if (this._summonPathIndex >= this._summonPath.length) {
+        this.isSummoning = false;
+        return;
+      }
+      return;
+    }
+
+    const step = Math.min(dist, this._summonSpeed * dt);
+    this.x += (dx / dist) * step;
+    this.z += (dz / dist) * step;
+    this.root.position.set(this.x, 0, this.z);
+    this.root.rotation.y = Math.atan2(dx, dz);
   }
 
   checkReached(playerPos) {

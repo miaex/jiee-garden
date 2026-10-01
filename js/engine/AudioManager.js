@@ -57,6 +57,21 @@ class AudioManager {
     this._tone(760, 0.18, 'sawtooth', 0.1);
   }
 
+  playDash() {
+    this._tone(300, 0.1, 'sawtooth', 0.08);
+    this._tone(500, 0.08, 'sawtooth', 0.06, 0.04);
+  }
+
+  playSummonReady() {
+    this._tone(440, 0.12, 'sine', 0.1);
+    this._tone(660, 0.14, 'sine', 0.1, 0.1);
+  }
+
+  playSweep() {
+    this._tone(200, 0.08, 'sawtooth', 0.12);
+    this._tone(700, 0.15, 'sine', 0.08, 0.03);
+  }
+
   playHit() {
     this._tone(140, 0.25, 'square', 0.15);
     this._tone(90, 0.3, 'square', 0.1, 0.05);

@@ -17,6 +17,8 @@ export class Enemy {
 
     this._walkT = 0;
     this._lastState = GuardState.PATROL;
+    this.defeated = false;
+    this._knockback = null;
   }
 
   _buildMesh(color) {
@@ -104,6 +106,11 @@ export class Enemy {
   }
 
   update(dt, playerPos, collisionWorld) {
+    if (this.defeated) {
+      this._updateKnockback(dt);
+      return 'DEFEATED';
+    }
+
     const result = this.ai.update(dt, playerPos, collisionWorld);
     this.root.position.set(result.x, 0, result.z);
     this.root.rotation.y = result.facing;
@@ -126,6 +133,43 @@ export class Enemy {
 
     this._lastState = result.state;
     return result.state;
+  }
+
+  // Tonton Jiee's summon sweep: knocked off their feet, tumble through the
+  // air toward (targetX, targetZ) — the spot Game.js already computed as
+  // "just before whatever they'd crash into" — then land and stay down for
+  // the rest of the level.
+  knockBack(targetX, targetZ) {
+    if (this.defeated) return;
+    this.defeated = true;
+    this._knockback = {
+      fromX: this.root.position.x,
+      fromZ: this.root.position.z,
+      toX: targetX,
+      toZ: targetZ,
+      t: 0,
+      duration: 0.38
+    };
+    this.alertMark.visible = false;
+    this.label.visible = false;
+  }
+
+  _updateKnockback(dt) {
+    const kb = this._knockback;
+    if (!kb) return;
+    kb.t = Math.min(1, kb.t + dt / kb.duration);
+    const ease = 1 - (1 - kb.t) * (1 - kb.t);
+    const x = kb.fromX + (kb.toX - kb.fromX) * ease;
+    const z = kb.fromZ + (kb.toZ - kb.fromZ) * ease;
+    const arc = Math.sin(kb.t * Math.PI) * 0.9;
+    this.root.position.set(x, arc, z);
+    this.root.rotation.z += dt * 20;
+
+    if (kb.t >= 1) {
+      this.root.position.y = 0;
+      this.root.rotation.z = Math.PI / 2; // comes to rest on its side
+      this._knockback = null;
+    }
   }
 
   get position() {

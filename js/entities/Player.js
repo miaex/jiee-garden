@@ -8,6 +8,11 @@ const TURN_SPEED = 13;
 const RADIUS = 0.32;
 const INVINCIBLE_MS = 1200;
 
+const DASH_SPEED = 8.5;
+const DASH_DURATION_MS = 200;
+const DASH_COOLDOWN_MS = 1400;
+const DASH_INVINCIBLE_MS = 260;
+
 export class Player {
   constructor(scene, startX, startZ) {
     this.radius = RADIUS;
@@ -19,6 +24,9 @@ export class Player {
     this.speedMultiplier = 1;
     this.speedBoostUntil = 0;
     this.shielded = false;
+    this.dashUntil = 0;
+    this.dashCooldownUntil = 0;
+    this.dashDir = { x: 0, z: 1 };
 
     this.root = new THREE.Group();
     this.root.position.set(startX, 0, startZ);
@@ -108,12 +116,26 @@ export class Player {
     const hasInput = inputVec.x !== 0 || inputVec.z !== 0;
     if (performance.now() > this.speedBoostUntil) this.speedMultiplier = 1;
 
-    const targetVX = inputVec.x * MAX_SPEED * this.speedMultiplier;
-    const targetVZ = inputVec.z * MAX_SPEED * this.speedMultiplier;
+    // Remember the last real movement direction so a dash triggered while
+    // standing still still goes somewhere sensible (facing direction)
+    // rather than nowhere.
+    if (hasInput) {
+      const mag = Math.hypot(inputVec.x, inputVec.z) || 1;
+      this.dashDir = { x: inputVec.x / mag, z: inputVec.z / mag };
+    }
 
-    const rate = hasInput ? ACCEL : DECEL;
-    this.velocity.x += (targetVX - this.velocity.x) * Math.min(1, rate * dt);
-    this.velocity.y += (targetVZ - this.velocity.y) * Math.min(1, rate * dt);
+    const dashing = performance.now() < this.dashUntil;
+
+    if (dashing) {
+      this.velocity.x = this.dashDir.x * DASH_SPEED;
+      this.velocity.y = this.dashDir.z * DASH_SPEED;
+    } else {
+      const targetVX = inputVec.x * MAX_SPEED * this.speedMultiplier;
+      const targetVZ = inputVec.z * MAX_SPEED * this.speedMultiplier;
+      const rate = hasInput ? ACCEL : DECEL;
+      this.velocity.x += (targetVX - this.velocity.x) * Math.min(1, rate * dt);
+      this.velocity.y += (targetVZ - this.velocity.y) * Math.min(1, rate * dt);
+    }
 
     this.speed = this.velocity.length();
 
@@ -122,12 +144,20 @@ export class Player {
       this.facing = lerpAngle(this.facing, targetFacing, Math.min(1, TURN_SPEED * dt));
     }
 
-    let nx = this.root.position.x + this.velocity.x * dt;
-    let nz = this.root.position.z + this.velocity.y * dt;
+    // Resolved one axis at a time (not as a single diagonal step) so
+    // pushing diagonally into a wall still slides at full speed along
+    // whichever axis is actually open, instead of feeling like it drags.
+    const oldX = this.root.position.x;
+    const oldZ = this.root.position.z;
 
-    const resolved = collisionWorld.resolveCircle(nx, nz, this.radius);
-    this.root.position.x = resolved.x;
-    this.root.position.z = resolved.z;
+    let nx = oldX + this.velocity.x * dt;
+    nx = collisionWorld.resolveCircle(nx, oldZ, this.radius).x;
+
+    let nz = oldZ + this.velocity.y * dt;
+    nz = collisionWorld.resolveCircle(nx, nz, this.radius).z;
+
+    this.root.position.x = nx;
+    this.root.position.z = nz;
     this.root.rotation.y = this.facing;
 
     this._animate(dt);
@@ -156,6 +186,12 @@ export class Player {
     this.body.position.y = 0.42 + bob;
     this.head.position.y = 0.78 + bob;
 
+    // Forward lean during a dash — the one cheap touch that sells "quick
+    // acrobatic dodge" rather than just "moving faster".
+    const dashing = performance.now() < this.dashUntil;
+    const targetLean = dashing ? 0.5 : 0;
+    this.root.rotation.x += (targetLean - this.root.rotation.x) * Math.min(1, 14 * dt);
+
     // Invincibility flicker feedback.
     const flashing = performance.now() < this.invincibleUntil;
     this.root.visible = !flashing || Math.floor(performance.now() / 90) % 2 === 0;
@@ -181,6 +217,25 @@ export class Player {
 
   applyShield(durationMs) {
     this.invincibleUntil = Math.max(this.invincibleUntil, performance.now() + durationMs);
+  }
+
+  // A short, fast burst in the last-moved (or currently faced) direction,
+  // with brief invincibility — the "acrobatic" dodge move: juke out of a
+  // guard's cone, or slip past one at the last second.
+  tryDash() {
+    const now = performance.now();
+    if (now < this.dashCooldownUntil) return false;
+    this.dashUntil = now + DASH_DURATION_MS;
+    this.dashCooldownUntil = now + DASH_COOLDOWN_MS;
+    this.invincibleUntil = Math.max(this.invincibleUntil, now + DASH_INVINCIBLE_MS);
+    return true;
+  }
+
+  dashCooldownFraction() {
+    const now = performance.now();
+    if (now >= this.dashCooldownUntil) return 0;
+    const remaining = this.dashCooldownUntil - now;
+    return Math.min(1, remaining / DASH_COOLDOWN_MS);
   }
 
   playVictory() {

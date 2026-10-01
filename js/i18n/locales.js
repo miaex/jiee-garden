@@ -35,6 +35,7 @@ export const LOCALES = {
     'status.hidden': 'Caché',
     'buff.speed': 'Vitesse !',
     'buff.shield': 'Protégé',
+    'summon.button': '📣 Appeler Tonton Jiee',
     'level.label': 'Niveau {n}',
     'bonus.life': '+1 ❤️'
   },
@@ -71,6 +72,7 @@ export const LOCALES = {
     'status.hidden': 'Hidden',
     'buff.speed': 'Speed!',
     'buff.shield': 'Shielded',
+    'summon.button': '📣 Call Uncle Jiee',
     'level.label': 'Level {n}',
     'bonus.life': '+1 ❤️'
   }

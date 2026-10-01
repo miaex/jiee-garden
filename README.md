@@ -99,6 +99,36 @@ et `saveManager.addCandies()`, jamais le mécanisme de stockage lui-même.
 
 ## Historique des correctifs
 
+- **v7 — correctif caméra critique, acrobaties, appel à Tonton Jiee**
+  - **Bug caméra corrigé** : coller le joueur à une haie faisait "zoomer"
+    la caméra jusqu'à coller son nez dans la texture (plein écran illisible).
+    Cause : le système anti-traversée-caméra réagissait même à une haie
+    juste à côté du joueur, et la ramenait à bout portant le long d'un rayon
+    qui n'avait pas encore eu le temps de prendre de la hauteur. Corrigé en
+    ignorant les obstacles trop proches du joueur pour ce calcul — la
+    caméra garde maintenant son angle élevé normal, même collé à un mur.
+    (La sensation de "ralentissement près des murs" venait très probablement
+    de ce même bug — plus de mouvement visible derrière une texture géante
+    donne l'impression d'être bloqué.)
+  - **Glissement le long des murs amélioré** : la collision se résout
+    maintenant axe par axe (X puis Z séparément) plutôt qu'en un seul bloc
+    diagonal — un vrai "sliding" fluide à pleine vitesse le long d'un mur,
+    technique standard pour ce genre de contrôle.
+  - **Esquive/dash** (💨, bouton dédié avec anneau de recharge) : brève
+    accélération dans la direction actuelle + invincibilité courte. De
+    vraies acrobaties utiles pour le cache-cache, pas juste un effet.
+  - **Glisser pour explorer le jardin** : un doigt sur le décor (hors
+    joystick) déplace la vue sans bouger le personnage, pour repérer les
+    obstacles avant d'avancer. Se recentre automatiquement dès qu'on
+    recommence à se déplacer au joystick.
+  - **Appel à Tonton Jiee** : une option apparaît occasionnellement et
+    aléatoirement en jeu (bouton pulsant). Une fois utilisée, Tonton Jiee
+    avance réellement vers le joueur (pathfinding réel à travers le
+    labyrinthe, pas une ligne droite) sur une distance limitée — plusieurs
+    appels sont nécessaires pour le faire venir jusqu'au bout. En chemin,
+    tout garde qu'il croise est balayé : il s'envole dans la direction
+    opposée et s'immobilise juste avant le premier obstacle rencontré,
+    hors-jeu pour le reste du niveau.
 - **v5 — bonus variés**
   - Les personnages positifs ne donnent plus seulement une vie : **vitesse
     temporaire** (⚡, x1.6 pendant 6s) et **bouclier temporaire** (🛡️,

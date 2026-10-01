@@ -6,7 +6,8 @@ const DEFAULT_DIST = 9;
 const PITCH_DEG = 55; // angled top-down, not a flat orthographic look
 const FOLLOW_LERP = 6;
 const ZOOM_LERP = 8;
-const MIN_SAFE_DIST = 2.5; // never let occlusion push the camera closer than this
+const MIN_SAFE_DIST = 5; // never let occlusion push the camera closer than this
+const OCCLUSION_IGNORE_DIST = 2.2; // ignore hedges this close to the player — see note below
 const BASE_FOV = 45;
 
 export class CameraController {
@@ -20,6 +21,7 @@ export class CameraController {
     this._raycaster = new THREE.Raycaster();
     this._occluders = [];
     this._targetFov = BASE_FOV;
+    this.panOffset = new THREE.Vector3(0, 0, 0);
   }
 
   // Meshes/groups the camera should not clip through (hedges, solid
@@ -42,8 +44,24 @@ export class CameraController {
     this._targetFov = BASE_FOV + clamp(value, 0, 1) * 6;
   }
 
-  follow(targetPos, dt) {
-    this.lookTarget.set(targetPos.x, 0.6, targetPos.z);
+  // Drag-to-scout: shifts what the camera looks at, away from the player,
+  // so the garden can be surveyed before committing to a path. Scaled by
+  // current zoom so the drag feels consistent whether zoomed in or out.
+  pan(dxScreen, dyScreen) {
+    const scale = this.distance * 0.0022;
+    this.panOffset.x += dxScreen * scale;
+    this.panOffset.z += dyScreen * scale;
+  }
+
+  // Called every frame with whether the player is actively steering —
+  // as soon as they are, the view smoothly recenters on them rather than
+  // lingering wherever they last panned to.
+  follow(targetPos, dt, playerIsMoving = false) {
+    if (playerIsMoving && this.panOffset.lengthSq() > 0.0001) {
+      this.panOffset.multiplyScalar(Math.max(0, 1 - Math.min(1, 6 * dt)));
+    }
+
+    this.lookTarget.set(targetPos.x + this.panOffset.x, 0.6, targetPos.z + this.panOffset.z);
     const followT = Math.min(1, FOLLOW_LERP * dt);
     this.currentLookTarget.lerp(this.lookTarget, followT);
 
@@ -75,6 +93,15 @@ export class CameraController {
   // camera position, pull the camera in front of it instead of letting it
   // clip through. Cheap: one ray per frame against the level's static
   // occluder groups.
+  //
+  // Bug fixed here: a hedge the PLAYER is standing right next to used to
+  // trigger this too. At that short range the ray hasn't climbed to its
+  // normal elevated angle yet, so clamping along it put the camera at
+  // near-ground level, a few centimeters from a hedge face — the screen
+  // filled entirely with one blown-up texture. Ignoring anything within
+  // OCCLUSION_IGNORE_DIST of the player fixes it: occlusion now only
+  // reacts to something genuinely between the player and the camera
+  // further back, not a wall the player is simply adjacent to.
   _clampAgainstOccluders(desiredPos) {
     if (!this._occluders.length) return desiredPos;
 
@@ -85,7 +112,7 @@ export class CameraController {
 
     this._raycaster.set(this.currentLookTarget, dir);
     this._raycaster.far = fullDist;
-    this._raycaster.near = 0.05;
+    this._raycaster.near = Math.min(OCCLUSION_IGNORE_DIST, fullDist * 0.5);
 
     const hits = this._raycaster.intersectObjects(this._occluders, true);
     if (hits.length && hits[0].distance < fullDist - 0.4) {
