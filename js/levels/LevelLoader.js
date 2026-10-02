@@ -13,13 +13,24 @@ const CURATED_LEVELS = {
   2: level02
 };
 
+// Generation itself is cheap (sub-millisecond even at level 999999 — it's
+// just a seeded grid carve), so this cache is purely to avoid redoing that
+// work on a quick restart, not something gameplay depends on. Capped so a
+// very long play session can't let it grow without bound; Map preserves
+// insertion order, so this evicts the least-recently-added entry, which is
+// an adequate approximation of LRU for how this is actually used (nearby
+// levels get revisited, distant ones don't).
 const generatedCache = new Map();
+const MAX_CACHED_LEVELS = 200;
 
 export const LevelLoader = {
   get(id) {
     if (CURATED_LEVELS[id]) return CURATED_LEVELS[id];
 
     if (!generatedCache.has(id)) {
+      if (generatedCache.size >= MAX_CACHED_LEVELS) {
+        generatedCache.delete(generatedCache.keys().next().value);
+      }
       generatedCache.set(id, generateProceduralLevel(id));
     }
     return generatedCache.get(id);

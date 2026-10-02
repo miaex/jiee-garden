@@ -4,10 +4,36 @@
 // (playHit, playVictory, ...), so dropping in real audio files later is
 // a one-file change, not a hunt through the codebase.
 
+const MUSIC_VOLUME = 0.78;
+
 class AudioManager {
   constructor() {
     this.enabled = true;
     this.ctx = null;
+    this.musicEl = null;
+    this.musicStarted = false;
+  }
+
+  // Mobile browsers block audio until a real user gesture — so this is
+  // only ever called from inside a click handler (the onboarding/"Jouer"
+  // buttons), never on page load. Idempotent: whichever of those fires
+  // first wins, the other call is a no-op.
+  startMusic(src) {
+    if (this.musicStarted) return;
+    this.musicStarted = true;
+    try {
+      this.musicEl = new Audio(src);
+      this.musicEl.loop = true;
+      this.musicEl.preload = 'auto';
+      this.musicEl.volume = this.enabled ? MUSIC_VOLUME : 0;
+      this.musicEl.play().catch(() => {
+        // Autoplay still refused for some reason — it'll start on the
+        // next interaction instead since musicStarted stays true and we
+        // don't retry-loop here; not worth surfacing to the player.
+      });
+    } catch (e) {
+      console.warn('Background music failed to start:', e);
+    }
   }
 
   _ensureCtx() {
@@ -20,6 +46,7 @@ class AudioManager {
 
   setEnabled(enabled) {
     this.enabled = enabled;
+    if (this.musicEl) this.musicEl.volume = enabled ? MUSIC_VOLUME : 0;
   }
 
   _tone(freq, duration, type = 'sine', gainPeak = 0.12, delay = 0) {

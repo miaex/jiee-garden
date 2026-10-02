@@ -224,6 +224,7 @@ export class Game {
     document.getElementById('sound-toggle-btn').addEventListener('click', () => this._toggleSound());
 
     document.getElementById('play-btn').addEventListener('click', () => {
+      audioManager.startMusic('assets/audio/theme.m4a');
       const startLevel = saveManager.data.highestLevelReached || 1;
       this.startLevel(startLevel);
     });
@@ -263,6 +264,7 @@ export class Game {
     });
 
     document.getElementById('onboarding-start-btn').addEventListener('click', () => {
+      audioManager.startMusic('assets/audio/theme.m4a');
       const name = document.getElementById('onboarding-name').value.trim();
       const gender = this._pendingGender || 'x';
       const lang = i18n.lang;

@@ -99,6 +99,28 @@ et `saveManager.addCandies()`, jamais le mécanisme de stockage lui-même.
 
 ## Historique des correctifs
 
+- **v8 — musique de fond, et audit de robustesse des niveaux infinis**
+  - **Traitement audio** (`assets/audio/theme.m4a`, à partir du fichier Suno
+    fourni) : volume ramené de -15.6 LUFS à -26 LUFS (environ deux fois plus
+    discret), une légère chaleur dans les bas-médiums, les aigus durs adoucis,
+    un soupçon de compression pour lisser l'ensemble. La boucle a aussi été
+    recousue (fondu enchaîné de 1,3s entre la fin et le début) pour qu'elle
+    tourne sans à-coup ni clic audible en jeu. *Je ne peux pas l'écouter
+    moi-même — tout ce qui précède est vérifié par mesure (LUFS, continuité
+    d'amplitude au point de boucle), pas à l'oreille. Un petit retour de ta
+    part après écoute serait utile si le dosage ne te convient pas encore.*
+  - **Intégration** : la musique démarre au premier vrai geste du joueur
+    (onboarding ou "Jouer" — obligatoire sur mobile, sinon le navigateur
+    bloque la lecture automatique), tourne en continu pour tout le jeu et
+    tous les niveaux comme demandé, respecte le bouton son coupé/activé, et
+    est mise en cache pour fonctionner hors-ligne comme le reste.
+  - **Niveaux infinis, audit de robustesse** : testé jusqu'au niveau
+    999 999 — génération toujours quasi instantanée (≤4ms), aucun crash,
+    aucune anomalie de disposition. Le système fonctionnait déjà ; une seule
+    amélioration ajoutée par précaution : le cache des niveaux générés est
+    maintenant plafonné (200 niveaux) pour qu'une très longue session ne
+    fasse jamais grossir la mémoire indéfiniment. Rien d'autre à revoir de
+    ce côté.
 - **v7 — correctif caméra critique, acrobaties, appel à Tonton Jiee**
   - **Bug caméra corrigé** : coller le joueur à une haie faisait "zoomer"
     la caméra jusqu'à coller son nez dans la texture (plein écran illisible).
